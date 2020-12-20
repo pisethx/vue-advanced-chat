@@ -4,32 +4,31 @@
 		:class="{ 'vac-rooms-container-full': isMobile }"
 		v-show="showRoomsList"
 	>
-		<slot name="rooms-header"></slot>
-
-		<div class="vac-box-search">
-			<div class="vac-icon-search" v-if="!loadingRooms && rooms.length">
-				<slot name="search-icon">
-					<svg-icon name="search" />
-				</slot>
-			</div>
-			<input
-				v-if="!loadingRooms && rooms.length"
-				type="search"
-				:placeholder="textMessages.SEARCH"
-				autocomplete="off"
-				class="vac-input"
-				@input="searchRoom"
-			/>
-			<div
-				v-if="showAddRoom"
-				class="vac-svg-button vac-add-icon"
-				@click="addRoom"
-			>
-				<slot name="add-icon">
-					<svg-icon name="add" />
-				</slot>
-			</div>
-		</div>
+		<slot name="rooms-header">
+			<div class="vac-box-search">
+				<div class="vac-icon-search" v-if="!loadingRooms && rooms.length">
+					<slot name="search-icon">
+						<svg-icon name="search" />
+					</slot>
+				</div>
+				<input
+					v-if="!loadingRooms && rooms.length"
+					type="search"
+					:placeholder="textMessages.SEARCH"
+					autocomplete="off"
+					class="vac-input"
+					@input="searchRoom"
+				/>
+				<div
+					v-if="showAddRoom"
+					class="vac-svg-button vac-add-icon"
+					@click="addRoom"
+				>
+					<slot name="add-icon">
+						<svg-icon name="add" />
+					</slot>
+				</div></div
+		></slot>
 
 		<loader :show="loadingRooms"></loader>
 
@@ -48,11 +47,14 @@
 				@click="openRoom(room)"
 			>
 				<slot name="room-list-item" v-bind="{ room }">
-					<div
-						v-if="room.avatar"
-						class="vac-room-avatar"
-						:style="{ 'background-image': `url('${room.avatar}')` }"
-					></div>
+					<slot name="room-avatar" v-bind:room="room">
+						>
+						<div
+							v-if="room.avatar"
+							class="vac-room-avatar"
+							:style="{ 'background-image': `url('${room.avatar}')` }"
+						></div>
+					</slot>
 					<div class="vac-name-container vac-text-ellipsis">
 						<div class="vac-title-container">
 							<div
@@ -90,16 +92,17 @@
 							<div
 								v-if="
 									room.lastMessage &&
-										!room.lastMessage.deleted &&
-										room.lastMessage.file &&
-										room.lastMessage.file.audio
+									!room.lastMessage.deleted &&
+									room.lastMessage.file &&
+									room.lastMessage.file.audio
 								"
 								class="vac-text-ellipsis"
 							>
-								<slot name="microphone-icon">
-									<svg-icon name="microphone" class="vac-icon-microphone" />
-								</slot>
-								{{ formattedDuration(room.lastMessage.file.duration) }}
+								<!-- <slot name="microphone-icon"> -->
+								<svg-icon name="microphone" class="vac-icon-microphone" />
+								<!-- </slot> -->
+								{{ getLastMessage(room) }}
+								<!-- {{formattedDuration(room.lastMessage.file.duration) }} -->
 							</div>
 							<format-message
 								v-else-if="room.lastMessage"
@@ -127,6 +130,8 @@
 				</slot>
 			</div>
 		</div>
+
+		<slot name="rooms-footer"></slot>
 	</div>
 </template>
 

@@ -31,11 +31,13 @@
 						:class="{ 'vac-item-clickable': roomInfo }"
 						@click="$emit('roomInfo', room)"
 					>
-						<div
-							v-if="room.avatar"
-							class="vac-room-avatar"
-							:style="{ 'background-image': `url('${room.avatar}')` }"
-						></div>
+						<slot name="room-avatar" v-bind:room="room">
+							<div
+								v-if="room.avatar"
+								class="vac-room-avatar"
+								:style="{ 'background-image': `url('${room.avatar}')` }"
+							></div>
+						</slot>
 						<slot
 							name="room-header-info"
 							v-bind="{ room, typingUsers, userStatus }"
@@ -166,11 +168,14 @@
 			<transition name="vac-slide-up">
 				<div v-if="messageReply" class="vac-reply-container">
 					<div class="vac-reply-box">
-						<img
-							v-if="isImageCheck(messageReply.file)"
-							:src="messageReply.file.url"
-							class="vac-image-reply"
-						/>
+						<template v-for="(file, idx) in messageReply.file">
+							<img
+								v-if="isMediaCheck(file)"
+								:key="idx"
+								:src="file.thumb"
+								class="vac-image-reply"
+							/>
+						</template>
 						<div class="vac-reply-info">
 							<div class="vac-reply-username">{{ messageReply.username }}</div>
 							<div class="vac-reply-content">{{ messageReply.content }}</div>
@@ -187,134 +192,166 @@
 				</div>
 			</transition>
 
-			<div class="vac-box-footer">
-				<div class="vac-icon-textarea-left" v-if="showAudio && !imageFile">
-					<div class="vac-svg-button" @click="recordAudio">
-						<slot
-							v-if="recorder.state === 'recording'"
-							name="microphone-off-icon"
-						>
-							<svg-icon name="microphone-off" class="vac-icon-microphone-off" />
-						</slot>
-						<slot v-else name="microphone-icon">
-							<svg-icon name="microphone" class="vac-icon-microphone" />
-						</slot>
-					</div>
-				</div>
-
-				<div class="vac-image-container" v-if="imageFile">
-					<div class="vac-svg-button vac-icon-image" @click="resetImageFile">
-						<slot name="image-close-icon">
-							<svg-icon name="close" param="image" />
-						</slot>
-					</div>
-					<div class="vac-image-file">
-						<img ref="imageFile" :src="imageFile" @load="onImgLoad" />
-					</div>
-				</div>
-
+			<div class="d-flex flex-column">
 				<div
-					v-else-if="file"
-					class="vac-file-container"
-					:class="{ 'vac-file-container-edit': editedMessage._id }"
+					v-if="imageFile.length || file.length"
+					class="d-flex white pa-2"
+					style="position: relative; overflow-y: scroll"
 				>
-					<div class="vac-icon-file">
-						<slot name="file-icon">
-							<svg-icon name="file" />
-						</slot>
-					</div>
-					<div class="vac-file-message" v-if="file && file.audio">audio</div>
-					<div class="vac-file-message" v-else>{{ message }}</div>
-					<div
-						class="vac-svg-button vac-icon-remove"
-						@click="resetMessage(null, true)"
-					>
-						<slot name="file-close-icon">
-							<svg-icon name="close" />
-						</slot>
-					</div>
+					<template class="vac-image-container" v-if="imageFile.length">
+						<div
+							v-for="(img, idx) in imageFile"
+							:key="idx"
+							style="position: relative"
+						>
+							<div
+								class="vac-svg-button vac-icon-image"
+								@click="resetImageFile(idx)"
+							>
+								<slot name="image-close-icon">
+									<svg-icon name="close" param="image" />
+								</slot>
+							</div>
+							<img
+								ref="imageFile"
+								:src="img"
+								@load="onImgLoad(idx)"
+								:class="{ 'pr-1': idx !== imageFile.length - 1 }"
+								class="image-preview"
+							/>
+						</div>
+					</template>
+
+					<!-- class="vac-file-container"
+						:class="{ 'vac-file-container-edit': editedMessage._id }" -->
+					<template v-else-if="file.length">
+						<div v-for="({ name }, i) in file" :key="i" class="d-flex ma-1">
+							<div class="vac-icon-file">
+								<slot name="file-icon">
+									<svg-icon name="file" />
+								</slot>
+							</div>
+							<!-- <div class="vac-file-message" v-if="file && file.audio">audio</div> -->
+							<div class="vac-file-message">{{ name }}</div>
+							<div
+								class="vac-svg-button vac-icon-remove"
+								@click="resetFile(idx)"
+							>
+								<slot name="file-close-icon">
+									<svg-icon name="close" />
+								</slot>
+							</div>
+						</div>
+					</template>
 				</div>
 
-				<textarea
-					v-show="!file || imageFile"
-					ref="roomTextarea"
-					:placeholder="textMessages.TYPE_MESSAGE"
-					class="vac-textarea"
-					:class="{
-						'vac-textarea-outline': editedMessage._id
-					}"
-					:style="{
-						'min-height': `${imageDimensions ? imageDimensions.height : 20}px`,
-						'padding-left': `${
-							imageDimensions ? imageDimensions.width - 10 : 12
-						}px`
-					}"
-					v-model="message"
-					@input="onChangeInput"
-					@keydown.esc="resetMessage"
-					@keydown.enter.exact.prevent=""
-				></textarea>
-
-				<div class="vac-icon-textarea">
-					<div
-						class="vac-svg-button"
-						v-if="editedMessage._id"
-						@click="resetMessage"
-					>
-						<slot name="edit-close-icon">
-							<svg-icon name="close-outline" />
-						</slot>
+				<div class="vac-box-footer">
+					<div class="vac-icon-textarea-left">
+						<div
+							v-if="showFiles"
+							class="vac-svg-button"
+							@click="launchFilePicker"
+						>
+							<slot name="paperclip-icon">
+								<svg-icon name="paperclip" />
+							</slot>
+						</div>
+						<input
+							v-if="showFiles"
+							type="file"
+							ref="file"
+							@change="onFileChange($event.target.files)"
+							multiple
+							style="display: none"
+						/>
 					</div>
 
-					<emoji-picker
-						v-if="showEmojis && (!file || imageFile)"
-						:emojiOpened="emojiOpened"
-						:positionTop="true"
-						@addEmoji="addEmoji"
-						@openEmoji="emojiOpened = $event"
-					>
-						<template v-slot:emoji-picker-icon>
-							<slot name="emoji-picker-icon"></slot>
-						</template>
-					</emoji-picker>
+					<!-- imageFile.length
+							? imageContainerHeight + 8 + 'px'
+							: '8px' -->
+					<!-- v-show="file.length || imageFile.length" -->
+					<textarea
+						ref="roomTextarea"
+						:placeholder="textMessages.TYPE_MESSAGE"
+						class="vac-textarea"
+						:class="{
+							'vac-textarea-outline': editedMessage._id
+						}"
+						:style="{
+							'min-height': '20px',
+							'padding-top': '8px'
+						}"
+						v-model="message"
+						@input="onChangeInput"
+						@keydown.esc="resetMessage"
+						@keydown.enter.exact.prevent=""
+					></textarea>
 
-					<div
-						v-if="showFiles"
-						class="vac-svg-button"
-						@click="launchFilePicker"
-					>
-						<slot name="paperclip-icon">
-							<svg-icon name="paperclip" />
-						</slot>
-					</div>
+					<div class="vac-icon-textarea">
+						<div
+							class="vac-svg-button"
+							v-if="editedMessage._id"
+							@click="resetMessage"
+						>
+							<slot name="edit-close-icon">
+								<svg-icon name="close-outline" />
+							</slot>
+						</div>
 
-					<div
-						v-if="textareaAction"
-						@click="textareaActionHandler"
-						class="vac-svg-button"
-					>
-						<slot name="custom-action-icon">
-							<svg-icon name="deleted" />
-						</slot>
-					</div>
+						<emoji-picker
+							v-if="showEmojis && (!file || imageFile)"
+							:emojiOpened="emojiOpened"
+							:positionTop="true"
+							@addEmoji="addEmoji"
+							@openEmoji="emojiOpened = $event"
+						>
+							<template v-slot:emoji-picker-icon>
+								<slot name="emoji-picker-icon"></slot>
+							</template>
+						</emoji-picker>
 
-					<input
-						v-if="showFiles"
-						type="file"
-						ref="file"
-						@change="onFileChange($event.target.files)"
-						style="display:none"
-					/>
+						<div v-if="showAudio" class="vac-svg-button" @click="recordAudio">
+							<slot
+								v-if="recorder.state === 'recording'"
+								name="microphone-off-icon"
+							>
+								<svg-icon
+									name="microphone-off"
+									class="vac-icon-microphone-off"
+								/>
+							</slot>
+							<slot
+								v-else
+								name="microphone-icon"
+								v-bind:disabled="!!imageFile.length"
+							>
+								<svg-icon name="microphone" class="vac-icon-microphone" />
+							</slot>
+						</div>
 
-					<div
-						v-if="showSendIcon"
-						@click="sendMessage"
-						class="vac-svg-button"
-						:class="{ 'vac-send-disabled': inputDisabled }"
-					>
-						<slot name="send-icon">
-							<svg-icon name="send" :param="inputDisabled ? 'disabled' : ''" />
-						</slot>
+						<div
+							v-if="textareaAction"
+							@click="textareaActionHandler"
+							class="vac-svg-button"
+						>
+							<slot name="custom-action-icon">
+								<svg-icon name="deleted" />
+							</slot>
+						</div>
+
+						<div
+							v-if="showSendIcon"
+							@click="sendMessage"
+							class="vac-svg-button"
+							:class="{ 'vac-send-disabled ': inputDisabled }"
+						>
+							<slot name="send-icon" v-bind:disabled="inputDisabled">
+								<svg-icon
+									name="send"
+									:param="inputDisabled ? 'disabled' : ''"
+								/>
+							</slot>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -384,9 +421,9 @@ export default {
 			infiniteState: null,
 			loadingMessages: false,
 			loadingMoreMessages: false,
-			file: null,
-			imageFile: null,
-			imageDimensions: null,
+			file: [],
+			imageFile: [],
+			imageDimensions: [],
 			menuOpened: false,
 			emojiOpened: false,
 			emojisList: {},
@@ -527,20 +564,21 @@ export default {
 	},
 
 	methods: {
-		onImgLoad() {
-			let height = this.$refs.imageFile.height
+		onImgLoad(idx) {
+			let ref = this.$refs.imageFile[idx]
+			let height = ref.height
 			if (height < 30) height = 30
 
-			this.imageDimensions = {
-				height: this.$refs.imageFile.height - 10,
-				width: this.$refs.imageFile.width + 26
+			this.imageDimensions[idx] = {
+				height: ref.height - 10,
+				width: ref.width + 26
 			}
 		},
 		async recordAudio() {
 			if (this.recorder.state === 'recording') {
 				this.recorder.stop()
 			} else {
-				this.file = null
+				this.file = []
 				this.recordedChunk = await this.startRecording()
 			}
 		},
@@ -564,12 +602,12 @@ export default {
 				stream.getTracks().forEach(track => track.stop())
 
 				const blob = new Blob(this.recordedChunks, {
-					type: 'audio/ogg; codecs="opus"'
+					type: 'audio/aac'
 				})
 
 				const duration = await this.getBlobDuration(blob)
 
-				this.file = {
+				this.file.push({
 					blob: blob,
 					name: 'audio',
 					size: blob.size,
@@ -577,7 +615,9 @@ export default {
 					type: blob.type,
 					audio: true,
 					localUrl: URL.createObjectURL(blob)
-				}
+				})
+
+				if (this.file?.length) this.sendMessage()
 			})
 		},
 		getBlobDuration(blob) {
@@ -606,11 +646,19 @@ export default {
 		addNewMessage(message) {
 			this.newMessages.push(message)
 		},
-		resetMessage(disableMobileFocus = null, editFile = null) {
+		resetMessage(disableMobileFocus = null, editFile = null, idx) {
 			this.$emit('typingMessage', null)
 
+			if (!isNaN(idx)) {
+				this.file.splice(idx, 1)
+				this.imageFile.splice(idx, 1)
+			} else {
+				this.file = []
+				this.imageFile = []
+			}
+
 			if (editFile) {
-				this.file = null
+				this.file = []
 				this.message = ''
 				return
 			}
@@ -619,17 +667,24 @@ export default {
 			this.message = ''
 			this.editedMessage = {}
 			this.messageReply = null
-			this.file = null
-			this.imageDimensions = null
-			this.imageFile = null
+			this.imageDimensions = []
 			this.emojiOpened = false
 			setTimeout(() => this.focusTextarea(disableMobileFocus), 0)
 		},
-		resetImageFile() {
-			this.imageDimensions = null
-			this.imageFile = null
+		resetImageFile(idx) {
+			if (!isNaN(idx)) this.imageFile.splice(idx, 1)
+			else this.imageFile = []
+
+			this.imageDimensions = []
 			this.editedMessage.file = null
-			this.file = null
+			this.file = []
+			this.focusTextarea()
+			setTimeout(() => this.resizeTextarea(), 0)
+		},
+		resetFile(idx) {
+			if (!isNaN(idx)) this.file.splice(idx, 1)
+			else this.file = []
+
 			this.focusTextarea()
 			setTimeout(() => this.resizeTextarea(), 0)
 		},
@@ -643,17 +698,17 @@ export default {
 			this.$refs['roomTextarea'].focus()
 		},
 		isMessageEmpty() {
-			return !this.file && !this.message.trim()
+			return !this.file?.length && !this.message.trim()
 		},
 		sendMessage() {
-			if (!this.file && !this.message.trim()) return
+			if (!this.file?.length && !this.message.trim()) return
 
 			if (this.editedMessage._id) {
 				if (this.editedMessage.content !== this.message || this.file) {
 					this.$emit('editMessage', {
 						messageId: this.editedMessage._id,
 						newContent: this.message.trim(),
-						file: this.file,
+						// file: this.file,
 						replyMessage: this.messageReply
 					})
 				}
@@ -700,8 +755,8 @@ export default {
 		editMessage(message) {
 			this.resetMessage()
 			this.editedMessage = { ...message }
-			this.file = message.file
-			if (this.isImageCheck(this.file)) this.imageFile = message.file.url
+			// this.file = message.file
+			// if (this.isMediaCheck(this.file)) this.imageFile = message.file.url
 			this.message = message.content
 
 			setTimeout(() => this.resizeTextarea(), 0)
@@ -735,30 +790,96 @@ export default {
 			this.$refs.file.value = ''
 			this.$refs.file.click()
 		},
+		getVideoThumbnail(file, seekTo = 0.0) {
+			return new Promise((resolve, reject) => {
+				// load the file to a video player
+				const videoPlayer = document.createElement('video')
+				videoPlayer.setAttribute('src', URL.createObjectURL(file))
+				videoPlayer.load()
+				videoPlayer.addEventListener('error', ex => {
+					reject('error when loading video file', ex)
+				})
+				// load metadata of the video to get video duration and dimensions
+				videoPlayer.addEventListener('loadedmetadata', () => {
+					// seek to user defined timestamp (in seconds) if possible
+					if (videoPlayer.duration < seekTo) {
+						reject('video is too short.')
+						return
+					}
+					// delay seeking or else 'seeked' event won't fire on Safari
+					setTimeout(() => {
+						videoPlayer.currentTime = seekTo
+					}, 200)
+					// extract video thumbnail once seeking is complete
+					videoPlayer.addEventListener('seeked', () => {
+						// define a canvas to have the same dimension as the video
+						const canvas = document.createElement('canvas')
+						canvas.width = videoPlayer.videoWidth
+						canvas.height = videoPlayer.videoHeight
+						// draw the video frame to canvas
+						const ctx = canvas.getContext('2d')
+						ctx.drawImage(videoPlayer, 0, 0, canvas.width, canvas.height)
+						// return the canvas image as a blob
+						ctx.canvas.toBlob(
+							blob => {
+								resolve(blob)
+							},
+							'image/jpeg',
+							0.75 /* quality */
+						)
+					})
+				})
+			})
+		},
+		createBlobFile(fileObject) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader()
+				reader.onload = e => {
+					resolve(e.target.result)
+				}
+
+				reader.readAsDataURL(fileObject)
+			})
+		},
+		async readAsBlob(fileObj) {
+			// const fileURL = URL.createObjectURL(fileObj)
+			// const blobFile = await fetch(fileURL).then((res) => res.blob())
+			return new Blob([fileObj], { type: fileObj.type })
+		},
 		async onFileChange(files) {
 			this.resetImageFile()
-			const file = files[0]
-			const fileURL = URL.createObjectURL(file)
-			const blobFile = await fetch(fileURL).then(res => res.blob())
+			// const file = files[0]
+			for (let file of Object.values(files)) {
+				try {
+					const blobFile = await this.readAsBlob(file)
+					const blob = file.type.startsWith('video/')
+						? await this.getVideoThumbnail(file)
+						: blobFile
+					const fileURL = await this.createBlobFile(blob)
 
-			this.file = {
-				blob: blobFile,
-				name: file.name.split('.')[0],
-				size: file.size,
-				type: file.name.split('.')[1] || file.type,
-				localUrl: fileURL
+					const formattedFile = {
+						blob: blobFile,
+						name: file.name,
+						size: file.size,
+						type: file.type,
+						localUrl: fileURL
+					}
+					this.file.push(formattedFile)
+
+					if (this.isMediaCheck(formattedFile)) this.imageFile.push(fileURL)
+				} catch (e) {
+					throw e
+				}
 			}
-			if (this.isImageCheck(this.file)) this.imageFile = fileURL
-			else this.message = file.name
 		},
-		isImageCheck(file) {
-			if (!file) return
-			const imageTypes = ['png', 'jpg', 'jpeg', 'svg']
+		isMediaCheck(file) {
+			if (!file) return false
+			const imageTypes = ['png', 'jpg', 'jpeg', 'svg', 'mp4']
 			const { type } = file
 			return imageTypes.some(t => type.toLowerCase().includes(t))
 		},
-		openFile({ message, action }) {
-			this.$emit('openFile', { message, action })
+		openFile({ message, action, idx }) {
+			this.$emit('openFile', { message, action, idx })
 		},
 		menuActionHandler(action) {
 			this.closeMenu()
@@ -775,6 +896,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.image-preview {
+	width: 100px;
+	height: 100px;
+	object-fit: cover;
+}
 .vac-container-center {
 	height: 100%;
 	width: 100%;
@@ -812,7 +938,7 @@ export default {
 	align-items: center;
 	height: 64px;
 	width: 100%;
-	z-index: 10;
+	z-index: 7;
 	margin-right: 1px;
 	background: var(--chat-header-bg-color);
 	border-top-right-radius: var(--chat-container-border-radius);
@@ -898,7 +1024,7 @@ export default {
 		0 1px 2px 0 rgba(0, 0, 0, 0.12);
 	display: flex;
 	cursor: pointer;
-	z-index: 10;
+	z-index: 7;
 
 	svg {
 		height: 25px;
@@ -909,11 +1035,12 @@ export default {
 .vac-room-footer {
 	width: calc(100% - 1px);
 	border-bottom-right-radius: 4px;
-	z-index: 10;
+	z-index: 7;
 }
 
 .vac-box-footer {
 	display: flex;
+	align-items: flex-end;
 	position: relative;
 	background: var(--chat-footer-bg-color);
 	padding: 10px 8px 10px;
@@ -928,11 +1055,11 @@ export default {
 
 	.vac-reply-box {
 		width: 100%;
-		overflow: hidden;
 		background: var(--chat-footer-bg-color-reply);
 		border-radius: 4px;
 		padding: 8px 10px;
 		display: flex;
+		flex-wrap: wrap;
 	}
 
 	.vac-reply-info {
@@ -961,8 +1088,10 @@ export default {
 	}
 
 	.vac-image-reply {
-		max-height: 100px;
-		margin-right: 10px;
+		height: 70px;
+		width: 70px;
+		object-fit: cover;
+		margin: 4px;
 	}
 }
 
@@ -974,7 +1103,7 @@ export default {
 	outline: 0;
 	resize: none;
 	border-radius: 20px;
-	padding: 12px 16px;
+	padding: 8px 16px;
 	box-sizing: content-box;
 	font-size: 16px;
 	background: var(--chat-bg-color-input);
@@ -997,7 +1126,8 @@ export default {
 
 .vac-icon-textarea-left {
 	display: flex;
-	margin: 12px 5px 0 0;
+	align-items: center;
+	margin: 0 5px;
 
 	svg,
 	.vac-wrapper {
@@ -1007,7 +1137,8 @@ export default {
 
 .vac-icon-textarea {
 	display: flex;
-	margin: 12px 0 0 5px;
+	align-items: center;
+	margin: 0 0 0 5px;
 
 	svg,
 	.vac-wrapper {
@@ -1033,23 +1164,24 @@ export default {
 }
 
 .vac-image-container {
-	position: absolute;
-	max-width: 25%;
-	left: 16px;
-	top: 18px;
+	display: flex;
+	overflow-y: scroll;
+	/* position: absolute; */
+	max-width: 100%;
+	/* left: 74px;
+	top: 18px; */
 }
 
 .vac-image-file {
 	display: flex;
 	justify-content: center;
-	flex-direction: column;
-	min-height: 30px;
+	/* flex-direction: column; */
 
 	img {
 		border-radius: 15px;
 		width: 100%;
-		max-width: 150px;
-		max-height: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 }
 
@@ -1057,7 +1189,7 @@ export default {
 	position: absolute;
 	top: 6px;
 	left: 6px;
-	z-index: 10;
+	z-index: 7;
 
 	svg {
 		height: 20px;
@@ -1078,9 +1210,11 @@ export default {
 
 .vac-file-container {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
-	width: calc(100% - 75px);
-	height: 20px;
+	width: calc(100% - 110px);
+	min-height: 20px;
+	margin-top: 6px;
 	padding: 12px 0;
 	box-sizing: content-box;
 	background: var(--chat-bg-color-input);
@@ -1101,7 +1235,8 @@ export default {
 
 .vac-icon-file {
 	display: flex;
-	margin: 0 8px 0 15px;
+	margin: 0 10px;
+	/* margin: 0 8px 0 15px; */
 }
 
 .vac-icon-remove {
@@ -1166,6 +1301,8 @@ export default {
 	.vac-textarea {
 		padding: 7px;
 		line-height: 18px;
+		margin-top: 6px;
+		width: 99%;
 
 		&::placeholder {
 			color: transparent;
@@ -1191,8 +1328,8 @@ export default {
 	}
 
 	.vac-image-container {
-		top: 10px;
-		left: 10px;
+		/* top: 10px;
+		left: 64px; */
 	}
 
 	.vac-image-file img {

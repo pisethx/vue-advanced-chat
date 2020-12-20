@@ -53,9 +53,11 @@
 
 							<div class="vac-image-reply-container" v-if="isImageReply">
 								<div
+									v-for="({ url }, idx) in message.replyMessage.file"
+									:key="idx"
 									class="vac-message-image vac-message-image-reply"
 									:style="{
-										'background-image': `url('${message.replyMessage.file.url}')`
+										'background-image': `url('${url}')`
 									}"
 								></div>
 							</div>
@@ -72,9 +74,9 @@
 							<span>{{ textMessages.MESSAGE_DELETED }}</span>
 						</div>
 
-						<div v-else-if="!message.file">
+						<div v-else-if="!message.file.length">
 							<format-message
-								:content="this.message.content"
+								:content="message.content"
 								:textFormatting="textFormatting"
 							>
 								<template v-slot:deleted-icon="data">
@@ -83,70 +85,84 @@
 							</format-message>
 						</div>
 
-						<div class="vac-image-container" v-else-if="isImage">
-							<loader
-								:style="{ top: `${imageResponsive.loaderTop}px` }"
-								:show="isImageLoading"
-							></loader>
-							<div
-								class="vac-message-image"
-								:class="{
-									'vac-image-loading':
-										isImageLoading && message.sender_id === currentUserId
-								}"
-								:style="{
-									'background-image': `url('${message.file.url}')`,
-									'max-height': `${imageResponsive.maxHeight}px`
-								}"
-							>
-								<transition name="vac-fade-image">
+						<div
+							v-else
+							class="d-flex flex-wrap"
+							:class="{ 'flex-row': isImage, 'flex-column': !isImage }"
+						>
+							<template v-for="(file, idx) in message.file">
+								<div
+									:key="'media-' + idx"
+									class="vac-image-container"
+									v-if="checkMediaType(file)"
+								>
 									<div
-										class="vac-image-buttons"
-										v-if="imageHover && !isImageLoading"
+										class="vac-message-image"
+										@click="openFile('preview', idx)"
+										:class="{
+											'vac-image-loading':
+												isImageLoading(file) &&
+												message.sender_id === currentUserId
+										}"
+										:style="{
+											'background-image': `url('${file.thumb}')`,
+											'max-height': `${imageResponsive.maxHeight}px`
+										}"
 									>
-										<div
-											class="vac-svg-button vac-button-view"
-											@click.stop="openFile('preview')"
-										>
-											<slot name="eye-icon">
-												<svg-icon name="eye" />
-											</slot>
-										</div>
-										<div
-											class="vac-svg-button vac-button-download"
-											@click.stop="openFile('download')"
-										>
-											<slot name="document-icon">
-												<svg-icon name="document" />
-											</slot>
-										</div>
+										<slot v-bind:file="file" name="video-icon"> </slot>
+
+										<!-- <transition name="vac-fade-image">
+											<div class="vac-image-buttons">
+												v-if="imageHover && !isImageLoading"
+												<div
+													class="vac-svg-button vac-button-view"
+													@click.stop="openFile('preview', idx)"
+												>
+													<slot name="eye-icon">
+														<svg-icon name="eye" />
+													</slot>
+												</div>
+												<div
+													class="vac-svg-button vac-button-download"
+													@click.stop="openFile('download', idx)"
+												>
+													<slot name="document-icon">
+														<svg-icon name="document" />
+													</slot>
+												</div>
+											</div>
+										</transition> -->
 									</div>
-								</transition>
-							</div>
-							<format-message
-								:content="this.message.content"
-								:textFormatting="textFormatting"
-							></format-message>
+								</div>
+
+								<div
+									:key="'audio-' + idx"
+									v-else-if="file.audio"
+									class="vac-audio-message"
+								>
+									<div id="vac-player">
+										<audio controls v-if="file.audio">
+											<source :src="file.url" />
+										</audio>
+									</div>
+								</div>
+
+								<div :key="'file-' + idx" v-else class="vac-file-message">
+									<div
+										class="vac-svg-button vac-icon-file"
+										@click.stop="openFile('download', idx)"
+									>
+										<slot name="document-icon">
+											<svg-icon name="document" />
+										</slot>
+									</div>
+									<span>{{ file.name }}</span>
+								</div>
+							</template>
 						</div>
 
-						<div v-else-if="message.file.audio" class="vac-audio-message">
-							<div id="vac-player">
-								<audio controls v-if="message.file.audio">
-									<source :src="message.file.url" />
-								</audio>
-							</div>
-						</div>
-
-						<div v-else class="vac-file-message">
-							<div
-								class="vac-svg-button vac-icon-file"
-								@click.stop="openFile('download')"
-							>
-								<slot name="document-icon">
-									<svg-icon name="document" />
-								</slot>
-							</div>
-							<span>{{ message.content }}</span>
+						<div v-if="message.file.length && message.content">
+							{{ message.content }}
 						</div>
 
 						<div class="vac-text-timestamp">
@@ -286,13 +302,13 @@
 import vClickOutside from 'v-click-outside'
 
 import SvgIcon from './SvgIcon'
-import Loader from './Loader'
+// import Loader from './Loader'
 import EmojiPicker from './EmojiPicker'
 import FormatMessage from './FormatMessage'
 
 export default {
 	name: 'message',
-	components: { SvgIcon, Loader, EmojiPicker, FormatMessage },
+	components: { SvgIcon, EmojiPicker, FormatMessage },
 
 	directives: {
 		clickOutside: vClickOutside.directive
@@ -385,17 +401,6 @@ export default {
 				this.message.sender_id !== this.messages[this.index - 1].sender_id
 			)
 		},
-		isImage() {
-			return this.checkImageFile()
-		},
-		isImageReply() {
-			return this.checkImageReplyFile()
-		},
-		isImageLoading() {
-			return (
-				this.message.file.url.indexOf('blob:http') !== -1 || this.imageLoading
-			)
-		},
 		isCheckmarkVisible() {
 			return (
 				this.message.sender_id === this.currentUserId &&
@@ -428,10 +433,31 @@ export default {
 			return this.message.sender_id === this.currentUserId
 				? this.messageActions
 				: this.messageActions.filter(message => !message.onlyMe)
+		},
+		isImage() {
+			return this.checkFilter(this.message.file, this.checkMediaType)
 		}
 	},
 
 	methods: {
+		isImageReply() {
+			return this.checkFilter(
+				this.message.replyMessage.file,
+				this.checkMediaType
+			)
+		},
+		isImageLoading(file) {
+			return false
+			// return file.url.indexOf('blob:http') !== -1 || this.imageLoading
+		},
+		checkFilter(arr, cb) {
+			if (!Array.isArray(arr)) return false
+			if (arr.length === 0) return false
+			const filteredArrLength = arr.filter(each => cb(each)).length
+			if (filteredArrLength === 0) return false
+
+			return filteredArrLength === arr.length
+		},
 		isMessageHover() {
 			return (
 				this.editedMessage._id === this.message._id ||
@@ -451,8 +477,8 @@ export default {
 			if (!this.optionsOpened && !this.emojiOpened) this.messageHover = false
 			this.hoverMessageId = null
 		},
-		openFile(action) {
-			this.$emit('openFile', { message: this.message, action })
+		openFile(action, idx) {
+			this.$emit('openFile', { message: this.message, action, idx })
 		},
 		messageActionHandler(action) {
 			this.closeOptions()
@@ -463,24 +489,32 @@ export default {
 				this.$emit('messageActionHandler', { action, message: this.message })
 			}, 300)
 		},
-		checkImageFile() {
-			return this.checkImageType(this.message.file)
+		checkImageFile(file) {
+			return this.checkMediaType(file)
 		},
-		checkImageReplyFile() {
-			return this.checkImageType(this.message.replyMessage.file)
+		checkImageReplyFile(file) {
+			return this.checkMediaType(file)
 		},
-		checkImageType(file) {
-			if (!file) return
-			const imageTypes = ['png', 'jpg', 'jpeg', 'svg']
+		checkMediaType(file) {
+			if (!file) return false
+
+			const imageTypes = ['png', 'jpg', 'jpeg', 'svg', 'mp4']
 			const { type } = file
 			return imageTypes.some(t => type.toLowerCase().includes(t))
 		},
 		checkImgLoad() {
-			if (!this.checkImageFile()) return
+			if (!this.isImage) return
 			this.imageLoading = true
-			const image = new Image()
-			image.src = this.message.file.url
-			image.addEventListener('load', () => (this.imageLoading = false))
+
+			this.message.file.map((file, idx) => {
+				const image = new Image()
+				image.src = file.thumb
+				image.addEventListener(
+					'load',
+					() =>
+						idx === this.message.file.length - 1 && (this.imageLoading = false)
+				)
+			})
 		},
 		openOptions() {
 			if (this.optionsClosing) return
@@ -597,6 +631,7 @@ export default {
 
 .vac-message-box {
 	display: flex;
+	align-items: center;
 	flex: 0 0 50%;
 	max-width: 50%;
 	justify-content: flex-start;
@@ -661,11 +696,12 @@ export default {
 }
 
 .vac-image-container {
-	width: 250px;
-	max-width: 100%;
+	margin: 2px;
+	flex-wrap: wrap;
 }
 
 .vac-image-reply-container {
+	display: flex;
 	width: 70px;
 }
 
@@ -675,8 +711,8 @@ export default {
 	background-size: cover !important;
 	background-position: center center !important;
 	background-repeat: no-repeat !important;
-	height: 250px;
-	width: 250px;
+	height: 150px;
+	width: 150px;
 	max-width: 100%;
 	border-radius: 4px;
 	margin: 4px auto 5px;
@@ -763,7 +799,6 @@ export default {
 
 .vac-file-message {
 	display: flex;
-	flex-wrap: wrap;
 	align-items: center;
 	margin-top: 3px;
 
@@ -795,25 +830,26 @@ export default {
 }
 
 .vac-options-container {
-	position: absolute;
+	margin-right: 10px;
+	/* position: absolute;
 	top: 2px;
 	right: 10px;
 	height: 40px;
 	width: 70px;
 	overflow: hidden;
 	z-index: 1;
-	border-top-right-radius: 8px;
+	border-top-right-radius: 8px; */
 }
 
 .vac-blur-container {
-	position: absolute;
+	/* position: absolute; */
 	height: 100%;
 	width: 100%;
-	left: 8px;
-	bottom: 10px;
-	background: var(--chat-message-bg-color);
-	filter: blur(3px);
-	border-bottom-left-radius: 8px;
+	/* left: 8px; */
+	/* bottom: 10px; */
+	/* background: var(--chat-message-bg-color); */
+	/* filter: blur(3px); */
+	/* border-bottom-left-radius: 8px; */
 }
 
 .vac-options-me {
@@ -867,8 +903,9 @@ export default {
 }
 
 .vac-message-options {
-	background: var(--chat-icon-bg-dropdown-message);
-	border-radius: 50%;
+	/* background: var(--chat-icon-bg-dropdown-message);
+	border-radius: 50%; */
+	background: none;
 	position: absolute;
 	top: 7px;
 	right: 7px;
@@ -944,6 +981,10 @@ export default {
 }
 
 @media only screen and (max-width: 768px) {
+	.vac-message-image {
+		width: 100px;
+		height: 100px;
+	}
 	.vac-message-container {
 		padding: 2px 3px 1px;
 	}
