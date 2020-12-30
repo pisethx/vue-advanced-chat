@@ -51,6 +51,7 @@
 				@editMessage="editMessage"
 				@deleteMessage="deleteMessage"
 				@openFile="openFile"
+				@routeClick="$emit('routeClick', $event)"
 				@menuActionHandler="menuActionHandler"
 				@messageActionHandler="messageActionHandler"
 				@sendMessageReaction="sendMessageReaction"

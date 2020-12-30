@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div @click.stop="message.isRoute ? $emit('routeClick', message) : undefined">
 		<div v-if="showDate" class="vac-card-info vac-card-date">
 			{{ message.date }}
 		</div>
@@ -14,27 +14,29 @@
 
 		<div
 			v-else
-			class="vac-message-box"
+			class="vac-message-box d-flex"
 			:class="{ 'vac-offset-current': message.sender_id === currentUserId }"
 		>
-			<slot name="message" v-bind="{ message }">
+			<slot name="chat-avatar" v-bind="{ message }"></slot>
+			<div
+				class="vac-message-container"
+				:class="{
+					'vac-message-container-route': message.isRoute,
+					'vac-message-container-offset': messageOffset
+				}"
+			>
 				<div
-					class="vac-message-container"
+					ref="imageRef"
+					class="vac-message-card"
 					:class="{
-						'vac-message-container-offset': messageOffset
+						'vac-message-highlight': isMessageHover(message),
+						'vac-message-current': message.sender_id === currentUserId,
+						'vac-message-deleted': message.deleted
 					}"
+					@mouseover="onHoverMessage(message)"
+					@mouseleave="onLeaveMessage"
 				>
-					<div
-						ref="imageRef"
-						class="vac-message-card"
-						:class="{
-							'vac-message-highlight': isMessageHover(message),
-							'vac-message-current': message.sender_id === currentUserId,
-							'vac-message-deleted': message.deleted
-						}"
-						@mouseover="onHoverMessage(message)"
-						@mouseleave="onLeaveMessage"
-					>
+					<slot name="chat-username" v-bind="{ message }">
 						<div
 							v-if="roomUsers.length > 2 && message.sender_id !== currentUserId"
 							class="vac-text-username"
@@ -44,74 +46,76 @@
 						>
 							<span>{{ message.username }}</span>
 						</div>
+					</slot>
 
-						<div
-							v-if="!message.deleted && message.replyMessage"
-							class="vac-reply-message"
+					<div
+						v-if="!message.deleted && message.replyMessage"
+						class="vac-reply-message"
+					>
+						<div class="vac-reply-username">{{ replyUsername }}</div>
+
+						<div class="vac-image-reply-container" v-if="isImageReply">
+							<div
+								v-for="({ url }, idx) in message.replyMessage.file"
+								:key="idx"
+								class="vac-message-image vac-message-image-reply"
+								:style="{
+									'background-image': `url('${url}')`
+								}"
+							></div>
+						</div>
+
+						<div class="vac-reply-content">
+							{{ message.replyMessage.content }}
+						</div>
+					</div>
+
+					<div v-if="message.deleted">
+						<slot name="deleted-icon">
+							<svg-icon name="deleted" class="vac-icon-deleted" />
+						</slot>
+						<span>{{ textMessages.MESSAGE_DELETED }}</span>
+					</div>
+
+					<div v-else-if="!message.file.length">
+						<format-message
+							:isRoute="message.isRoute"
+							:content="message.content"
+							:textFormatting="textFormatting"
 						>
-							<div class="vac-reply-username">{{ replyUsername }}</div>
+							<template v-slot:deleted-icon="data">
+								<slot name="deleted-icon" v-bind="data"></slot>
+							</template>
+						</format-message>
+					</div>
 
-							<div class="vac-image-reply-container" v-if="isImageReply">
-								<div
-									v-for="({ url }, idx) in message.replyMessage.file"
-									:key="idx"
-									class="vac-message-image vac-message-image-reply"
-									:style="{
-										'background-image': `url('${url}')`
-									}"
-								></div>
-							</div>
-
-							<div class="vac-reply-content">
-								{{ message.replyMessage.content }}
-							</div>
-						</div>
-
-						<div v-if="message.deleted">
-							<slot name="deleted-icon">
-								<svg-icon name="deleted" class="vac-icon-deleted" />
-							</slot>
-							<span>{{ textMessages.MESSAGE_DELETED }}</span>
-						</div>
-
-						<div v-else-if="!message.file.length">
-							<format-message
-								:content="message.content"
-								:textFormatting="textFormatting"
+					<div
+						v-else
+						class="d-flex flex-wrap"
+						:class="{ 'flex-row': isImage, 'flex-column': !isImage }"
+					>
+						<template v-for="(file, idx) in message.file">
+							<div
+								:key="'media-' + idx"
+								class="vac-image-container"
+								v-if="checkMediaType(file)"
 							>
-								<template v-slot:deleted-icon="data">
-									<slot name="deleted-icon" v-bind="data"></slot>
-								</template>
-							</format-message>
-						</div>
-
-						<div
-							v-else
-							class="d-flex flex-wrap"
-							:class="{ 'flex-row': isImage, 'flex-column': !isImage }"
-						>
-							<template v-for="(file, idx) in message.file">
 								<div
-									:key="'media-' + idx"
-									class="vac-image-container"
-									v-if="checkMediaType(file)"
+									class="vac-message-image"
+									@click="openFile('preview', idx)"
+									:class="{
+										'vac-image-loading':
+											isImageLoading(file) &&
+											message.sender_id === currentUserId
+									}"
+									:style="{
+										'background-image': `url('${file.thumb}')`,
+										'max-height': `${imageResponsive.maxHeight}px`
+									}"
 								>
-									<div
-										class="vac-message-image"
-										@click="openFile('preview', idx)"
-										:class="{
-											'vac-image-loading':
-												isImageLoading(file) &&
-												message.sender_id === currentUserId
-										}"
-										:style="{
-											'background-image': `url('${file.thumb}')`,
-											'max-height': `${imageResponsive.maxHeight}px`
-										}"
-									>
-										<slot v-bind:file="file" name="video-icon"> </slot>
+									<slot v-bind:file="file" name="video-icon"> </slot>
 
-										<!-- <transition name="vac-fade-image">
+									<!-- <transition name="vac-fade-image">
 											<div class="vac-image-buttons">
 												v-if="imageHover && !isImageLoading"
 												<div
@@ -132,168 +136,165 @@
 												</div>
 											</div>
 										</transition> -->
-									</div>
 								</div>
-
-								<div
-									:key="'audio-' + idx"
-									v-else-if="file.audio"
-									class="vac-audio-message"
-								>
-									<div id="vac-player">
-										<audio controls v-if="file.audio">
-											<source :src="file.url" />
-										</audio>
-									</div>
-								</div>
-
-								<div :key="'file-' + idx" v-else class="vac-file-message">
-									<div
-										class="vac-svg-button vac-icon-file"
-										@click.stop="openFile('download', idx)"
-									>
-										<slot name="document-icon">
-											<svg-icon name="document" />
-										</slot>
-									</div>
-									<span>{{ file.name }}</span>
-								</div>
-							</template>
-						</div>
-
-						<div v-if="message.file.length && message.content">
-							{{ message.content }}
-						</div>
-
-						<div class="vac-text-timestamp">
-							<div
-								class="vac-icon-edited"
-								v-if="message.edited && !message.deleted"
-							>
-								<slot name="pencil-icon">
-									<svg-icon name="pencil" />
-								</slot>
 							</div>
-							<span>{{ message.timestamp }}</span>
-							<span v-if="isCheckmarkVisible">
-								<slot name="checkmark-icon" v-bind="{ message }">
-									<svg-icon
-										:name="
-											message.distributed ? 'double-checkmark' : 'checkmark'
-										"
-										:param="message.seen ? 'seen' : ''"
-										class="vac-icon-check"
-									></svg-icon>
-								</slot>
-							</span>
-						</div>
 
-						<div
-							class="vac-options-container"
-							:class="{ 'vac-options-image': isImage && !message.replyMessage }"
-							:style="{
-								width:
-									filteredMessageActions.length && showReactionEmojis
-										? '70px'
-										: '45px'
-							}"
-						>
-							<transition-group name="vac-slide-left">
-								<div
-									key="1"
-									class="vac-blur-container"
-									:class="{
-										'vac-options-me': message.sender_id === currentUserId
-									}"
-									v-if="isMessageActions || isMessageReactions"
-								></div>
+							<div
+								:key="'audio-' + idx"
+								v-else-if="file.audio"
+								class="vac-audio-message"
+							>
+								<div id="vac-player">
+									<audio controls v-if="file.audio">
+										<source :src="file.url" />
+									</audio>
+								</div>
+							</div>
 
+							<div :key="'file-' + idx" v-else class="vac-file-message">
 								<div
-									ref="actionIcon"
-									key="2"
-									class="vac-svg-button vac-message-options"
-									v-if="isMessageActions"
-									@click="openOptions"
+									class="vac-svg-button vac-icon-file"
+									@click.stop="openFile('download', idx)"
 								>
-									<slot name="dropdown-icon">
-										<svg-icon name="dropdown" param="message" />
+									<slot name="document-icon">
+										<svg-icon name="document" />
 									</slot>
 								</div>
+								<span>{{ file.name }}</span>
+							</div>
+						</template>
+					</div>
 
-								<emoji-picker
-									key="3"
-									class="vac-message-reactions"
-									:style="{ right: isMessageActions ? '30px' : '5px' }"
-									v-if="isMessageReactions"
-									v-click-outside="closeEmoji"
-									:emojiOpened="emojiOpened"
-									:emojiReaction="true"
-									:roomFooterRef="roomFooterRef"
-									:positionRight="message.sender_id === currentUserId"
-									@addEmoji="sendMessageReaction"
-									@openEmoji="openEmoji"
-								>
-									<template v-slot:emoji-picker-icon>
-										<slot name="emoji-picker-reaction-icon"></slot>
-									</template>
-								</emoji-picker>
-							</transition-group>
-						</div>
+					<div v-if="message.file.length && message.content">
+						{{ message.content }}
+					</div>
 
-						<transition
-							:name="
-								message.sender_id === currentUserId
-									? 'vac-slide-left'
-									: 'vac-slide-right'
-							"
-							v-if="filteredMessageActions.length"
+					<div class="vac-text-timestamp">
+						<div
+							class="vac-icon-edited"
+							v-if="message.edited && !message.deleted"
 						>
+							<slot name="pencil-icon">
+								<svg-icon name="pencil" />
+							</slot>
+						</div>
+						<span>{{ message.timestamp }}</span>
+						<span v-if="isCheckmarkVisible">
+							<slot name="checkmark-icon" v-bind="{ message }">
+								<svg-icon
+									:name="message.distributed ? 'double-checkmark' : 'checkmark'"
+									:param="message.seen ? 'seen' : ''"
+									class="vac-icon-check"
+								></svg-icon>
+							</slot>
+						</span>
+					</div>
+
+					<div
+						class="vac-options-container"
+						:class="{ 'vac-options-image': isImage && !message.replyMessage }"
+						:style="{
+							width:
+								filteredMessageActions.length && showReactionEmojis
+									? '70px'
+									: '45px'
+						}"
+					>
+						<transition-group name="vac-slide-left">
 							<div
-								ref="menuOptions"
-								v-if="optionsOpened"
-								v-click-outside="closeOptions"
-								class="vac-menu-options"
+								key="1"
+								class="vac-blur-container"
 								:class="{
-									'vac-menu-left': message.sender_id !== currentUserId
+									'vac-options-me': message.sender_id === currentUserId
 								}"
-								:style="{ top: `${menuOptionsTop}px` }"
+								v-if="isMessageActions || isMessageReactions"
+							></div>
+
+							<div
+								ref="actionIcon"
+								key="2"
+								class="vac-svg-button vac-message-options"
+								v-if="isMessageActions"
+								@click="openOptions"
 							>
-								<div class="vac-menu-list">
+								<slot name="dropdown-icon">
+									<svg-icon name="dropdown" param="message" />
+								</slot>
+							</div>
+
+							<emoji-picker
+								key="3"
+								class="vac-message-reactions"
+								:style="{ right: isMessageActions ? '30px' : '5px' }"
+								v-if="isMessageReactions"
+								v-click-outside="closeEmoji"
+								:emojiOpened="emojiOpened"
+								:emojiReaction="true"
+								:roomFooterRef="roomFooterRef"
+								:positionRight="message.sender_id === currentUserId"
+								@addEmoji="sendMessageReaction"
+								@openEmoji="openEmoji"
+							>
+								<template v-slot:emoji-picker-icon>
+									<slot name="emoji-picker-reaction-icon"></slot>
+								</template>
+							</emoji-picker>
+						</transition-group>
+					</div>
+
+					<transition
+						:name="
+							message.sender_id === currentUserId
+								? 'vac-slide-left'
+								: 'vac-slide-right'
+						"
+						v-if="filteredMessageActions.length"
+					>
+						<div
+							ref="menuOptions"
+							v-if="optionsOpened"
+							v-click-outside="closeOptions"
+							class="vac-menu-options"
+							:class="{
+								'vac-menu-left': message.sender_id !== currentUserId
+							}"
+							:style="{ top: `${menuOptionsTop}px` }"
+						>
+							<div class="vac-menu-list">
+								<div
+									v-for="action in filteredMessageActions"
+									:key="action.name"
+								>
 									<div
-										v-for="action in filteredMessageActions"
-										:key="action.name"
+										class="vac-menu-item"
+										@click="messageActionHandler(action)"
 									>
-										<div
-											class="vac-menu-item"
-											@click="messageActionHandler(action)"
-										>
-											{{ action.title }}
-										</div>
+										{{ action.title }}
 									</div>
 								</div>
 							</div>
-						</transition>
-					</div>
-
-					<transition-group name="vac-slide-left" v-if="!message.deleted">
-						<button
-							v-for="(reaction, key) in message.reactions"
-							v-show="reaction.length"
-							:key="key + 0"
-							class="vac-button-reaction"
-							:class="{
-								'vac-reaction-me': reaction.indexOf(currentUserId) !== -1
-							}"
-							:style="{
-								float: message.sender_id === currentUserId ? 'right' : 'left'
-							}"
-							@click="sendMessageReaction({ name: key }, reaction)"
-						>
-							{{ getEmojiByName(key) }}<span>{{ reaction.length }}</span>
-						</button>
-					</transition-group>
+						</div>
+					</transition>
 				</div>
-			</slot>
+
+				<transition-group name="vac-slide-left" v-if="!message.deleted">
+					<button
+						v-for="(reaction, key) in message.reactions"
+						v-show="reaction.length"
+						:key="key + 0"
+						class="vac-button-reaction"
+						:class="{
+							'vac-reaction-me': reaction.indexOf(currentUserId) !== -1
+						}"
+						:style="{
+							float: message.sender_id === currentUserId ? 'right' : 'left'
+						}"
+						@click="sendMessageReaction({ name: key }, reaction)"
+					>
+						{{ getEmojiByName(key) }}<span>{{ reaction.length }}</span>
+					</button>
+				</transition-group>
+			</div>
 		</div>
 	</div>
 </template>

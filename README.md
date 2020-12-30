@@ -1,3 +1,8 @@
+```bash
+# increment version in package json
+npm publish
+```
+
 <p align="center">
 <a href="https://travis-ci.org/antoine92190/vue-advanced-chat"><img src="https://img.shields.io/travis/antoine92190/vue-advanced-chat/master.svg"></a>
 <a href="https://www.npmjs.com/package/vue-advanced-chat"><img src="https://img.shields.io/npm/dm/vue-advanced-chat.svg"></a>
@@ -113,13 +118,13 @@ You can import it as a custom component:
 // DO THIS
 const rooms = []
 for (let i = 0; i < res.length; i++) {
-  rooms.push(res)
+	rooms.push(res)
 }
 this.rooms = rooms
 
 // DON'T DO THIS
 for (let i = 0; i < res.length; i++) {
-  this.rooms.push(res)
+	this.rooms.push(res)
 }
 ```
 

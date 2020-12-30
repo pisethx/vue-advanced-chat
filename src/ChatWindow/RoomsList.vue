@@ -58,9 +58,9 @@
 					<div class="vac-name-container vac-text-ellipsis">
 						<div class="vac-title-container">
 							<div
-								v-if="userStatus(room)"
+								v-if="isRoomOnline(room)"
 								class="vac-state-circle"
-								:class="{ 'vac-state-online': userStatus(room) === 'online' }"
+								:class="{ 'vac-state-online': isRoomOnline(room) }"
 							></div>
 							<div class="vac-room-name vac-text-ellipsis">
 								{{ room.roomName }}
@@ -195,12 +195,14 @@ export default {
 		addRoom() {
 			this.$emit('addRoom')
 		},
-		userStatus(room) {
-			if (!room.users || room.users.length !== 2) return
+		isRoomOnline(room) {
+			return room.online
 
-			const user = room.users.find(u => u._id !== this.currentUserId)
+			// if (!room.users || room.users.length !== 2) return
 
-			if (user.status) return user.status.state
+			// const user = room.users.find(u => u._id !== this.currentUserId)
+
+			// if (user.status) return user.status.state
 		},
 		typingUsers(room) {
 			return typingText(room, this.currentUserId, this.textMessages)

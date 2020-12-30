@@ -47,9 +47,11 @@
 									{{ room.roomName }}
 								</div>
 								<div v-if="typingUsers" class="vac-room-info vac-text-ellipsis">
+									<div class="vac-state-circle vac-state-online mr-3"></div>
 									{{ typingUsers }}
 								</div>
 								<div v-else class="vac-room-info vac-text-ellipsis">
+									<div class="vac-state-circle vac-state-online mr-3"></div>
 									{{ userStatus }}
 								</div>
 							</div>
@@ -88,7 +90,9 @@
 			</slot>
 		</div>
 		<div ref="scrollContainer" class="vac-container-scroll">
-			<loader :show="loadingMessages"></loader>
+			<slot name="chat-loader">
+				<loader :show="loadingMessages"></loader>
+			</slot>
 			<div class="vac-messages-container">
 				<div :class="{ 'vac-messages-hidden': loadingMessages }">
 					<transition name="vac-fade-message">
@@ -135,6 +139,7 @@
 								:hideOptions="hideOptions"
 								@messageActionHandler="messageActionHandler"
 								@openFile="openFile"
+								@routeClick="$emit('routeClick', $event)"
 								@addNewMessage="addNewMessage"
 								@sendMessageReaction="sendMessageReaction"
 								@hideOptions="hideOptions = $event"
@@ -148,6 +153,7 @@
 							</message>
 						</div>
 					</transition-group>
+					<slot name="typing" v-bind:scrollToBottom="scrollToBottom"></slot>
 				</div>
 			</div>
 		</div>
@@ -195,7 +201,7 @@
 			<div class="d-flex flex-column">
 				<div
 					v-if="imageFile.length || file.length"
-					class="d-flex white pa-2"
+					class="d-flex vac-uploaded-file pa-2"
 					style="position: relative; overflow-y: scroll"
 				>
 					<template class="vac-image-container" v-if="imageFile.length">
@@ -343,7 +349,6 @@
 							v-if="showSendIcon"
 							@click="sendMessage"
 							class="vac-svg-button"
-							:class="{ 'vac-send-disabled ': inputDisabled }"
 						>
 							<slot name="send-icon" v-bind:disabled="inputDisabled">
 								<svg-icon
@@ -545,21 +550,22 @@ export default {
 			return typingText(this.room, this.currentUserId, this.textMessages)
 		},
 		userStatus() {
-			if (!this.room.users || this.room.users.length !== 2) return
+			return this.room.online ? this.textMessages.IS_ONLINE : ''
+			// if (!this.room.users || this.room.users.length !== 2) return
 
-			const user = this.room.users.find(u => u._id !== this.currentUserId)
+			// const user = this.room.users.find(u => u._id !== this.currentUserId)
 
-			if (!user.status) return
+			// if (!user.status) return
 
-			let text = ''
+			// let text = ''
 
-			if (user.status.state === 'online') {
-				text = this.textMessages.IS_ONLINE
-			} else if (user.status.last_changed) {
-				text = this.textMessages.LAST_SEEN + user.status.last_changed
-			}
+			// if (user.status.state === 'online') {
+			// 	text = this.textMessages.IS_ONLINE
+			// } else if (user.status.last_changed) {
+			// 	text = this.textMessages.LAST_SEEN + user.status.last_changed
+			// }
 
-			return text
+			// return text
 		}
 	},
 
@@ -588,7 +594,11 @@ export default {
 				video: false
 			})
 
-			this.recorder = new MediaRecorder(stream)
+			const mimeType = 'audio/webm;codecs=opus'
+
+			this.recorder = new MediaRecorder(stream, {
+				mimeType
+			})
 
 			this.recorder.ondataavailable = e => this.recordedChunks.push(e.data)
 			this.recorder.start()
@@ -600,9 +610,9 @@ export default {
 
 			stopped.then(async () => {
 				stream.getTracks().forEach(track => track.stop())
-
+				console.log(this.recordedChunks)
 				const blob = new Blob(this.recordedChunks, {
-					type: 'audio/aac'
+					type: mimeType
 				})
 
 				const duration = await this.getBlobDuration(blob)
@@ -720,7 +730,7 @@ export default {
 				})
 			}
 
-			this.resetMessage(true)
+			this.resetMessage()
 		},
 		loadMoreMessages(infiniteState) {
 			if (this.loadingMoreMessages) return

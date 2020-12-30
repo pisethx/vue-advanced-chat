@@ -8,6 +8,7 @@
 					:class="{
 						'vac-text-ellipsis': singleLine,
 						'vac-text-deleted': deleted,
+						'vac-text-route': isRoute,
 						'vac-text-bold': checkType(message, 'bold'),
 						'vac-text-italic': checkType(message, 'italic'),
 						'vac-text-strike': checkType(message, 'strike'),
@@ -45,6 +46,7 @@ export default {
 		deleted: { type: Boolean, default: false },
 		formatLinks: { type: Boolean, default: true },
 		singleLine: { type: Boolean, default: false },
+		isRoute: { type: Boolean, default: false },
 		textFormatting: { type: Boolean, required: true }
 	},
 
