@@ -106,18 +106,23 @@
 						</div>
 					</transition>
 					<transition name="vac-fade-message">
-						<infinite-loading
-							v-if="messages.length"
-							spinner="spiral"
-							direction="top"
-							@infinite="loadMoreMessages"
+						<slot
+							name="infinite-loading"
+							v-bind="{ loadMoreMessages, messages }"
 						>
-							<div slot="spinner">
-								<loader :show="true" :infinite="true"></loader>
-							</div>
-							<div slot="no-results"></div>
-							<div slot="no-more"></div>
-						</infinite-loading>
+							<infinite-loading
+								v-if="messages.length"
+								spinner="spiral"
+								direction="top"
+								@infinite="loadMoreMessages"
+							>
+								<div slot="spinner">
+									<loader :show="true" :infinite="true"></loader>
+								</div>
+								<div slot="no-results"></div>
+								<div slot="no-more"></div>
+							</infinite-loading>
+						</slot>
 					</transition>
 					<transition-group name="vac-fade-message">
 						<div v-for="(message, i) in messages" :key="message._id">
@@ -375,7 +380,7 @@ import SvgIcon from './SvgIcon'
 import EmojiPicker from './EmojiPicker'
 
 const { messagesValid } = require('../utils/roomValidation')
-const { detectMobile } = require('../utils/mobileDetection')
+const { detectMobile, iOSDevice } = require('../utils/mobileDetection')
 import typingText from '../utils/typingText'
 
 export default {
@@ -610,7 +615,7 @@ export default {
 
 			stopped.then(async () => {
 				stream.getTracks().forEach(track => track.stop())
-				console.log(this.recordedChunks)
+
 				const blob = new Blob(this.recordedChunks, {
 					type: mimeType
 				})
@@ -733,15 +738,31 @@ export default {
 			this.resetMessage()
 		},
 		loadMoreMessages(infiniteState) {
-			if (this.loadingMoreMessages) return
+			setTimeout(
+				() => {
+					if (this.loadingMoreMessages) return
 
-			if (this.messagesLoaded || !this.room.roomId) {
-				return infiniteState.complete()
-			}
+					if (this.messagesLoaded || !this.room.roomId) {
+						return infiniteState.complete()
+					}
 
-			this.infiniteState = infiniteState
-			this.$emit('fetchMessages')
-			this.loadingMoreMessages = true
+					this.infiniteState = infiniteState
+					this.$emit('fetchMessages')
+					this.loadingMoreMessages = true
+				},
+				// prevent scroll bouncing issue on iOS devices
+				iOSDevice() ? 500 : 0
+			)
+
+			// if (this.loadingMoreMessages) return
+
+			// if (this.messagesLoaded || !this.room.roomId) {
+			// 	return infiniteState.complete()
+			// }
+
+			// this.infiniteState = infiniteState
+			// this.$emit('fetchMessages')
+			// this.loadingMoreMessages = true
 		},
 		messageActionHandler({ action, message }) {
 			switch (action.name) {
@@ -878,7 +899,7 @@ export default {
 
 					if (this.isMediaCheck(formattedFile)) this.imageFile.push(fileURL)
 				} catch (e) {
-					throw e
+					return e
 				}
 			}
 		},

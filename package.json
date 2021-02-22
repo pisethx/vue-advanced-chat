@@ -1,6 +1,6 @@
 {
   "name": "@pisethx/vue-chat",
-  "version": "0.5.75",
+  "version": "0.5.79",
   "license": "MIT",
   "description": "A beautiful chat rooms component made with Vue.js",
   "author": "Antoine Dupont <antoindupontdev@gmail.com>",
@@ -30,6 +30,7 @@
     "build:wc": "vue-cli-service build --target wc --name vue-advanced-chat ./src/ChatWindow/ChatWindow.vue",
     "prepublish": "npm run build:lib",
     "publish-beta": "npm publish --tag beta",
+    "pub": "npm run build:lib && npm publish",
     "lint": "vue-cli-service lint"
   },
   "files": [
