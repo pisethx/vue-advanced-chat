@@ -17,7 +17,7 @@
 			class="vac-message-box d-flex"
 			:class="{ 'vac-offset-current': message.sender_id === currentUserId }"
 		>
-			<slot name="chat-avatar" v-bind="{ message }"></slot>
+			<slot name="chat-avatar" v-bind="{ message, room }"></slot>
 			<div
 				class="vac-message-container"
 				:class="{
@@ -36,7 +36,7 @@
 					@mouseover="onHoverMessage(message)"
 					@mouseleave="onLeaveMessage"
 				>
-					<slot name="chat-username" v-bind="{ message }">
+					<slot name="chat-username" v-bind="{ message, room }">
 						<div
 							v-if="roomUsers.length > 2 && message.sender_id !== currentUserId"
 							class="vac-text-username"
@@ -180,7 +180,7 @@
 						</div>
 						<span>{{ message.timestamp }}</span>
 						<span v-if="isCheckmarkVisible">
-							<slot name="checkmark-icon" v-bind="{ message }">
+							<slot name="checkmark-icon" v-bind="{ message, room }">
 								<svg-icon
 									:name="message.distributed ? 'double-checkmark' : 'checkmark'"
 									:param="message.seen ? 'seen' : ''"
@@ -320,6 +320,7 @@ export default {
 		textMessages: { type: Object, required: true },
 		index: { type: Number, required: true },
 		message: { type: Object, required: true },
+		room: { type: Object, required: true },
 		messages: { type: Array, required: true },
 		editedMessage: { type: Object, required: true },
 		roomUsers: { type: Array, default: () => [] },

@@ -142,6 +142,7 @@
 								:textFormatting="textFormatting"
 								:emojisList="emojisList"
 								:hideOptions="hideOptions"
+								:room="room"
 								@messageActionHandler="messageActionHandler"
 								@openFile="openFile"
 								@routeClick="$emit('routeClick', $event)"
@@ -261,6 +262,7 @@
 						<div
 							v-if="showFiles"
 							class="vac-svg-button"
+							v-bind:room="room"
 							@click="launchFilePicker"
 						>
 							<slot name="paperclip-icon">
@@ -325,6 +327,7 @@
 							<slot
 								v-if="recorder.state === 'recording'"
 								name="microphone-off-icon"
+								v-bind:room="room"
 							>
 								<svg-icon
 									name="microphone-off"
@@ -335,6 +338,7 @@
 								v-else
 								name="microphone-icon"
 								v-bind:disabled="!!imageFile.length"
+								v-bind:room="room"
 							>
 								<svg-icon name="microphone" class="vac-icon-microphone" />
 							</slot>
@@ -355,7 +359,11 @@
 							@click="sendMessage"
 							class="vac-svg-button"
 						>
-							<slot name="send-icon" v-bind:disabled="inputDisabled">
+							<slot
+								name="send-icon"
+								v-bind:disabled="inputDisabled"
+								v-bind:room="room"
+							>
 								<svg-icon
 									name="send"
 									:param="inputDisabled ? 'disabled' : ''"

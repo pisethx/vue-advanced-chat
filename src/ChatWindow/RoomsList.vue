@@ -215,21 +215,22 @@ export default {
 				? this.textMessages.MESSAGE_DELETED
 				: room.lastMessage.content
 
-			if (room.users.length <= 2) {
-				return content
-			}
+			return content
+			// if (room.users.length <= 2) {
+			// 	return content
+			// }
 
-			const user = room.users.find(
-				user => user._id === room.lastMessage.sender_id
-			)
+			// const user = room.users.find(
+			// 	user => user._id === room.lastMessage.sender_id
+			// )
 
-			if (room.lastMessage.username) {
-				return `${room.lastMessage.username} - ${content}`
-			} else if (!user || user._id === this.currentUserId) {
-				return content
-			}
+			// if (room.lastMessage.username) {
+			// 	return `${room.lastMessage.username} - ${content}`
+			// } else if (!user || user._id === this.currentUserId) {
+			// 	return content
+			// }
 
-			return `${user.username} - ${content}`
+			// return `${user.username} - ${content}`
 		},
 		formattedDuration(s) {
 			s = Math.round(s)
