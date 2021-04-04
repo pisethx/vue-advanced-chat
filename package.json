@@ -1,6 +1,6 @@
 {
   "name": "@pisethx/vue-chat",
-  "version": "0.5.82",
+  "version": "0.5.88",
   "license": "MIT",
   "description": "A beautiful chat rooms component made with Vue.js",
   "author": "Antoine Dupont <antoindupontdev@gmail.com>",

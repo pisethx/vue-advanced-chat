@@ -779,7 +779,7 @@ export default {
 				case 'editMessage':
 					return this.editMessage(message)
 				case 'deleteMessage':
-					return this.$emit('deleteMessage', message._id)
+					return this.$emit('deleteMessage', message)
 				default:
 					return this.$emit('messageActionHandler', { action, message })
 			}
@@ -1340,7 +1340,7 @@ export default {
 	.vac-textarea {
 		padding: 7px;
 		line-height: 18px;
-		margin-top: 6px;
+		margin-top: 0px;
 		width: 99%;
 
 		&::placeholder {
@@ -1349,7 +1349,7 @@ export default {
 	}
 
 	.vac-icon-textarea-left {
-		margin: 6px 5px 0 0;
+		margin: 0px 5px 0 0;
 
 		svg,
 		.wrapper {
@@ -1358,7 +1358,7 @@ export default {
 	}
 
 	.vac-icon-textarea {
-		margin: 6px 0 0 5px;
+		margin: 0px 0 0 5px;
 
 		svg,
 		.wrapper {

@@ -43,7 +43,10 @@
 				class="vac-room-item"
 				v-for="room in filteredRooms"
 				:key="room.roomId"
-				:class="{ 'vac-room-selected': selectedRoomId === room.roomId }"
+				:class="{
+					'vac-room-selected': selectedRoomId === room.roomId,
+					'vac-room-new': room.isNew
+				}"
 				@click="openRoom(room)"
 			>
 				<slot name="room-list-item" v-bind="{ room }">
@@ -58,10 +61,15 @@
 					<div class="vac-name-container vac-text-ellipsis">
 						<div class="vac-title-container">
 							<div
+								v-if="room.isNew"
+								class="vac-state-circle"
+								:class="{ 'vac-state-new': room.isNew }"
+							></div>
+							<!-- <div
 								v-if="isRoomOnline(room)"
 								class="vac-state-circle"
 								:class="{ 'vac-state-online': isRoomOnline(room) }"
-							></div>
+							></div> -->
 							<div class="vac-room-name vac-text-ellipsis">
 								{{ room.roomName }}
 							</div>
@@ -331,6 +339,10 @@ export default {
 	overflow-y: auto;
 }
 
+.vac-room-new {
+	background: var(--chat-sidemenu-bg-color-hover);
+}
+
 .vac-room-item {
 	border-radius: 8px;
 	align-items: center;
@@ -420,6 +432,10 @@ export default {
 
 .vac-state-online {
 	background-color: var(--chat-room-color-online);
+}
+
+.vac-state-new {
+	background-color: var(--chat-room-color-new);
 }
 
 .vac-icon-microphone {

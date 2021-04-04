@@ -214,6 +214,7 @@ export const defaultThemeStyles = {
 			colorMessage: '#6c7278',
 			colorTimestamp: '#ebedf2',
 			colorStateOnline: '#4caf50',
+			colorStateNew: '#1976d2',
 			colorStateOffline: '#596269',
 			backgroundCounterBadge: '#1976d2',
 			colorCounterBadge: '#fff'
@@ -348,6 +349,7 @@ export const cssThemeVars = ({
 		'--chat-room-color-message': room.colorMessage,
 		'--chat-room-color-timestamp': room.colorTimestamp,
 		'--chat-room-color-online': room.colorStateOnline,
+		'--chat-room-color-new': room.colorStateNew,
 		'--chat-room-color-offline': room.colorStateOffline,
 		'--chat-room-bg-color-badge': room.backgroundCounterBadge,
 		'--chat-room-color-badge': room.colorCounterBadge,
