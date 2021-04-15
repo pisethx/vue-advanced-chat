@@ -12,6 +12,8 @@
 				:showRoomsList="showRoomsList"
 				:textFormatting="textFormatting"
 				:isMobile="isMobile"
+				:mentionRegex="mentionRegex"
+				:mentionRouteClick="mentionRouteClick"
 				@fetchRoom="fetchRoom"
 				@addRoom="addRoom"
 			>
@@ -44,6 +46,8 @@
 				:loadingRooms="loadingRooms"
 				:roomInfo="$listeners.roomInfo"
 				:textareaAction="$listeners.textareaActionHandler"
+				:mentionRegex="mentionRegex"
+				:mentionRouteClick="mentionRouteClick"
 				@toggleRoomsList="toggleRoomsList"
 				@roomInfo="roomInfo"
 				@fetchMessages="fetchMessages"
@@ -113,7 +117,9 @@ export default {
 		showNewMessagesDivider: { type: Boolean, default: true },
 		textFormatting: { type: Boolean, default: true },
 		newMessage: { type: Object, default: null },
-		roomMessage: { type: String, default: '' }
+		roomMessage: { type: String, default: '' },
+		mentionRegex: RegExp,
+		mentionRouteClick: String
 	},
 
 	data() {

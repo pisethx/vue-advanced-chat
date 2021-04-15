@@ -1,7 +1,7 @@
 const linkify = require('linkifyjs')
 
-export default (text, doLinkify) => {
-	const json = compileToJSON(text)
+export default (text, doLinkify, opts = {}) => {
+	const json = compileToJSON(text, opts)
 
 	const html = compileToHTML(json)
 
@@ -10,6 +10,7 @@ export default (text, doLinkify) => {
 	const result = [].concat.apply([], flatten)
 
 	markdownResult(result)
+	mentionResult(result, { ...opts, doLinkify })
 
 	if (doLinkify) linkifyResult(result)
 
@@ -66,17 +67,35 @@ const pseudo_markdown = {
 	// }
 }
 
-function compileToJSON(str) {
+function compileToJSON(str, opts = {}) {
 	let result = []
 	let min_index_of = -1
 	let min_index_of_key = null
 
+	let mentionKey = '@{'
+
 	let links = linkify.find(str)
+
+	let mentions = (str.match(opts.mentionRegex) ?? [])
+		.map(stripTextFromRegex)
+		.filter(m => m.split('|')?.length === 2)
+		.map(m => ({
+			full: `@{${m}}`,
+			id: m.split('|')[0],
+			value: m.split('|')[1]
+		}))
+
 	let min_index_from_link = false
+	let min_index_from_mention = false
 
 	if (links.length > 0) {
 		min_index_of = str.indexOf(links[0].value)
 		min_index_from_link = true
+	}
+
+	if (mentions.length > 0) {
+		min_index_of = str.indexOf(mentionKey)
+		min_index_from_mention = true
 	}
 
 	Object.keys(pseudo_markdown).forEach(starting_value => {
@@ -88,12 +107,22 @@ function compileToJSON(str) {
 		}
 	})
 
-	if (min_index_from_link && min_index_of_key !== -1) {
+	if (min_index_from_mention && min_index_of_key !== -1) {
 		let str_left = str.substr(0, min_index_of)
-		let str_link = str.substr(min_index_of, links[0].value.length)
-		let str_right = str.substr(min_index_of + links[0].value.length)
+		let str_link = str.substr(min_index_of, mentions[0].full.length)
+		let str_right = str.substr(min_index_of + mentions[0].full.length)
 		result.push(str_left)
 		result.push(str_link)
+		result = result.concat(compileToJSON(str_right), opts)
+		return result
+	}
+
+	if (min_index_from_link && min_index_of_key !== -1) {
+		let str_left = str.substr(0, min_index_of)
+		let str_mention = str.substr(min_index_of, links[0].value.length)
+		let str_right = str.substr(min_index_of + links[0].value.length)
+		result.push(str_left)
+		result.push(str_mention)
 		result = result.concat(compileToJSON(str_right))
 		return result
 	}
@@ -240,6 +269,20 @@ function markdownResult(array) {
 	}
 }
 
+function mentionResult(array, opts = {}) {
+	array.forEach(arr => {
+		const mention = arr.value.match(opts.mentionRegex)?.[0]
+
+		if (mention) {
+			const [id, name] = stripTextFromRegex(mention).split('|')
+
+			arr.types = opts.doLinkify ? ['url'].concat(arr.types) : arr.types
+			arr.href = opts.mentionRouteClick.replace('{id}', id)
+			arr.value = `@${name}`
+		}
+	})
+}
+
 function linkifyResult(array) {
 	const result = []
 
@@ -248,15 +291,19 @@ function linkifyResult(array) {
 
 		if (links.length) {
 			const spaces = arr.value.replace(links[0].value, '')
-			result.push({ types: arr.types, value: spaces })
+			result.push({ types: arr.types, value: spaces.trim() })
 
 			arr.types = ['url'].concat(arr.types)
 			arr.href = links[0].href
-			arr.value = links[0].value
+			arr.value = links[0].value.trim()
 		}
 
 		result.push(arr)
 	})
 
 	return result
+}
+
+function stripTextFromRegex(text) {
+	return text.replace(/@\{|\}/gi, '')
 }

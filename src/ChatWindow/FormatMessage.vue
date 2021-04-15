@@ -6,6 +6,7 @@
 					:is="checkType(message, 'url') ? 'a' : 'span'"
 					:key="i"
 					:class="{
+						'px-1': !!message.href,
 						'vac-text-ellipsis': singleLine,
 						'vac-text-deleted': deleted,
 						'vac-text-route': isRoute,
@@ -21,14 +22,13 @@
 					:href="message.href"
 					target="_blank"
 				>
-					<slot name="deleted-icon" v-bind="{ deleted }">
-						<svg-icon v-if="deleted" name="deleted" class="vac-icon-deleted" />
-					</slot>
-					{{ message.value }}
-				</component>
+					<slot v-if="deleted" name="deleted-icon" v-bind="{ deleted }">
+						<svg-icon name="deleted" class="vac-icon-deleted" /> </slot
+					>{{ message.value.trim() }}</component
+				>
 			</template>
 		</div>
-		<div v-else>{{ content }}</div>
+		<div v-else>{{ content.trim() }}</div>
 	</div>
 </template>
 
@@ -47,12 +47,17 @@ export default {
 		formatLinks: { type: Boolean, default: true },
 		singleLine: { type: Boolean, default: false },
 		isRoute: { type: Boolean, default: false },
-		textFormatting: { type: Boolean, required: true }
+		textFormatting: { type: Boolean, required: true },
+		mentionRegex: RegExp,
+		mentionRouteClick: String
 	},
 
 	computed: {
 		linkifiedMessage() {
-			return formatString(this.content, this.formatLinks)
+			return formatString(this.content, this.formatLinks, {
+				mentionRouteClick: this.mentionRouteClick,
+				mentionRegex: this.mentionRegex
+			})
 		}
 	},
 

@@ -143,6 +143,8 @@
 								:emojisList="emojisList"
 								:hideOptions="hideOptions"
 								:room="room"
+								:mentionRegex="mentionRegex"
+								:mentionRouteClick="mentionRouteClick"
 								@messageActionHandler="messageActionHandler"
 								@openFile="openFile"
 								@routeClick="$emit('routeClick', $event)"
@@ -283,6 +285,7 @@
 							? imageContainerHeight + 8 + 'px'
 							: '8px' -->
 					<!-- v-show="file.length || imageFile.length" -->
+
 					<textarea
 						ref="roomTextarea"
 						:placeholder="textMessages.TYPE_MESSAGE"
@@ -299,6 +302,17 @@
 						@keydown.esc="resetMessage"
 						@keydown.enter.exact.prevent=""
 					></textarea>
+
+					<slot
+						name="textarea"
+						v-bind="{
+							textMessages,
+							editedMessage,
+							message,
+							onChangeInput,
+							resetMessage
+						}"
+					></slot>
 
 					<div class="vac-icon-textarea">
 						<div
@@ -428,7 +442,9 @@ export default {
 		textFormatting: { type: Boolean, required: true },
 		loadingRooms: { type: Boolean, required: true },
 		roomInfo: { type: Function },
-		textareaAction: { type: Function }
+		textareaAction: { type: Function },
+		mentionRegex: RegExp,
+		mentionRouteClick: String
 	},
 
 	data() {
@@ -542,6 +558,9 @@ export default {
 	},
 
 	computed: {
+		refRoomTextarea() {
+			return this.$scopedSlots.roomTextarea?.() || this.$refs['roomTextarea']
+		},
 		room() {
 			return this.rooms.find(room => room.roomId === this.roomId) || {}
 		},
@@ -712,13 +731,13 @@ export default {
 			setTimeout(() => this.resizeTextarea(), 0)
 		},
 		resetTextareaSize() {
-			if (!this.$refs['roomTextarea']) return
-			this.$refs['roomTextarea'].style.height = '20px'
+			if (!this.refRoomTextarea) return
+			this.refRoomTextarea.style.height = '20px'
 		},
 		focusTextarea(disableMobileFocus) {
 			if (detectMobile() && disableMobileFocus) return
-			if (!this.$refs['roomTextarea']) return
-			this.$refs['roomTextarea'].focus()
+			if (!this.refRoomTextarea) return
+			this.refRoomTextarea.focus()
 		},
 		isMessageEmpty() {
 			return !this.file?.length && !this.message.trim()
@@ -809,7 +828,7 @@ export default {
 			this.$emit('typingMessage', this.message)
 		},
 		resizeTextarea() {
-			const el = this.$refs['roomTextarea']
+			const el = this.refRoomTextarea
 
 			if (!el) return
 
@@ -934,7 +953,7 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss"  scoped>
 .image-preview {
 	width: 100px;
 	height: 100px;

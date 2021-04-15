@@ -1,18 +1,10 @@
 {
   "name": "@pisethx/vue-chat",
-  "version": "0.5.88",
+  "version": "0.5.119",
   "license": "MIT",
   "description": "A beautiful chat rooms component made with Vue.js",
-  "author": "Antoine Dupont <antoindupontdev@gmail.com>",
-  "keywords": [
-    "vue",
-    "vuejs",
-    "chat",
-    "vue-js-chat",
-    "multiple",
-    "group",
-    "rooms",
-    "realtime"
+  "author": "Pisethx>",
+  "keywords": [ 
   ],
   "repository": {
     "type": "git",

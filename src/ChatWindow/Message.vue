@@ -82,6 +82,8 @@
 							:isRoute="message.isRoute"
 							:content="message.content"
 							:textFormatting="textFormatting"
+							:mentionRouteClick="mentionRouteClick"
+							:mentionRegex="mentionRegex"
 						>
 							<template v-slot:deleted-icon="data">
 								<slot name="deleted-icon" v-bind="data"></slot>
@@ -331,7 +333,10 @@ export default {
 		showNewMessagesDivider: { type: Boolean, required: true },
 		textFormatting: { type: Boolean, required: true },
 		emojisList: { type: Object, required: true },
-		hideOptions: { type: Boolean, required: true }
+		hideOptions: { type: Boolean, required: true },
+
+		mentionRegex: RegExp,
+		mentionRouteClick: String
 	},
 
 	data() {
