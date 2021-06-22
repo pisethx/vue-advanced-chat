@@ -1,54 +1,54 @@
 {
-  "name": "@pisethx/vue-chat",
-  "version": "0.5.119",
-  "license": "MIT",
-  "description": "A beautiful chat rooms component made with Vue.js",
-  "author": "Pisethx>",
-  "keywords": [ 
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rancou/vue-advanced-chat.git"
-  },
-  "bugs": {
-    "url": "https://github.com/rancou/vue-advanced-chat/issues"
-  },
-  "homepage": "https://github.com/rancou/vue-advanced-chat#readme",
-  "main": "./dist/vue-advanced-chat.common.js",
-  "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "build:lib": "vue-cli-service build --target lib --name vue-advanced-chat ./src/ChatWindow/index.js",
-    "build:wc": "vue-cli-service build --target wc --name vue-advanced-chat ./src/ChatWindow/ChatWindow.vue",
-    "prepublish": "npm run build:lib",
-    "publish-beta": "npm publish --tag beta",
-    "pub": "npm run build:lib && npm publish",
-    "lint": "vue-cli-service lint"
-  },
-  "files": [
-    "dist/*"
-  ],
-  "peerDependencies": {
-    "vue": "^2.6.10"
-  },
-  "devDependencies": {
-    "@vue/cli-plugin-babel": "^4.1.0",
-    "@vue/cli-plugin-eslint": "^4.1.0",
-    "@vue/cli-service": "^4.1.0",
-    "@vue/eslint-config-standard": "^4.0.0",
-    "babel-eslint": "^10.0.3",
-    "eslint": "^5.16.0",
-    "eslint-plugin-vue": "^5.0.0",
-    "node-sass": "^4.13.0",
-    "sass": "^1.19.0",
-    "sass-loader": "^8.0.0",
-    "vue-template-compiler": "^2.6.10",
-    "vue": "^2.6.10"
-  },
-  "dependencies": {
-    "linkifyjs": "^2.1.9",
-    "v-click-outside": "^3.0.0",
-    "vue-emoji-picker": "^1.0.1",
-    "vue-infinite-loading": "^2.4.4"
-  }
+	"name": "@pisethx/vue-chat",
+	"version": "0.5.192",
+	"license": "MIT",
+	"description": "A beautiful chat rooms component made with Vue.js",
+	"author": "Pisethx",
+	"keywords": [],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/rancou/vue-advanced-chat.git"
+	},
+	"bugs": {
+		"url": "https://github.com/rancou/vue-advanced-chat/issues"
+	},
+	"homepage": "https://github.com/rancou/vue-advanced-chat#readme",
+	"main": "./dist/vue-advanced-chat.common.js",
+	"scripts": {
+		"serve": "vue-cli-service serve",
+		"build": "vue-cli-service build",
+		"build:lib": "vue-cli-service build --target lib --name vue-advanced-chat ./src/ChatWindow/index.js",
+		"build:wc": "vue-cli-service build --target wc --name vue-advanced-chat ./src/ChatWindow/ChatWindow.vue",
+		"prepublish": "npm run build:lib",
+		"publish-beta": "npm publish --tag beta",
+		"pub": "npm run build:lib && npm publish",
+		"lint": "vue-cli-service lint"
+	},
+	"files": [
+		"dist/*"
+	],
+	"peerDependencies": {
+		"vue": "^2.6.10"
+	},
+	"devDependencies": {
+		"@vue/cli-plugin-babel": "^4.1.0",
+		"@vue/cli-plugin-eslint": "^4.1.0",
+		"@vue/cli-service": "^4.1.0",
+		"@vue/eslint-config-standard": "^4.0.0",
+		"babel-eslint": "^10.0.3",
+		"eslint": "^5.16.0",
+		"eslint-plugin-vue": "^5.0.0",
+		"node-sass": "^4.13.0",
+		"sass": "^1.19.0",
+		"sass-loader": "^8.0.0",
+		"vue": "^2.6.10",
+		"vue-template-compiler": "^2.6.10"
+	},
+	"dependencies": {
+		"audio-recorder-polyfill": "^0.4.1",
+		"linkifyjs": "^2.1.9",
+		"v-click-outside": "^3.0.0",
+		"vue-emoji-picker": "^1.0.1",
+		"vue-infinite-loading": "^2.4.4"
+	}
 }

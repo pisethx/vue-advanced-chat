@@ -31,7 +31,7 @@
 						:class="{ 'vac-item-clickable': roomInfo }"
 						@click="$emit('roomInfo', room)"
 					>
-						<slot name="room-avatar" v-bind:room="room">
+						<slot name="room-avatar" v-bind="{ room, isRoomHeader: true }">
 							<div
 								v-if="room.avatar"
 								class="vac-room-avatar"
@@ -112,6 +112,7 @@
 						>
 							<infinite-loading
 								v-if="messages.length"
+								v-show="hasCursor"
 								spinner="spiral"
 								direction="top"
 								@infinite="loadMoreMessages"
@@ -144,7 +145,6 @@
 								:hideOptions="hideOptions"
 								:room="room"
 								:mentionRegex="mentionRegex"
-								:mentionRouteClick="mentionRouteClick"
 								@messageActionHandler="messageActionHandler"
 								@openFile="openFile"
 								@routeClick="$emit('routeClick', $event)"
@@ -392,6 +392,8 @@
 </template>
 
 <script>
+import AudioRecorder from 'audio-recorder-polyfill'
+
 import InfiniteLoading from 'vue-infinite-loading'
 import vClickOutside from 'v-click-outside'
 import emojis from 'vue-emoji-picker/src/emojis'
@@ -439,12 +441,12 @@ export default {
 		showEmojis: { type: Boolean, required: true },
 		showReactionEmojis: { type: Boolean, required: true },
 		showNewMessagesDivider: { type: Boolean, required: true },
+		hasCursor: { type: Boolean, required: true },
 		textFormatting: { type: Boolean, required: true },
 		loadingRooms: { type: Boolean, required: true },
 		roomInfo: { type: Function },
 		textareaAction: { type: Function },
-		mentionRegex: RegExp,
-		mentionRouteClick: String
+		mentionRegex: RegExp
 	},
 
 	data() {
@@ -617,50 +619,107 @@ export default {
 				this.recorder.stop()
 			} else {
 				this.file = []
+				this.recordedChunks = []
 				this.recordedChunk = await this.startRecording()
 			}
 		},
+		onRecordingError(e) {
+			return Promise.reject(
+				e || new Error('Audio Recording is not supported on your device.')
+			)
+		},
 		async startRecording() {
-			const stream = await navigator.mediaDevices.getUserMedia({
-				audio: true,
-				video: false
-			})
+			window.MediaRecorder = MediaRecorder.isTypeSupported
+				? window.MediaRecorder
+				: AudioRecorder
 
-			const mimeType = 'audio/webm;codecs=opus'
+			if (navigator.mediaDevices === undefined) {
+				navigator.mediaDevices = {}
+			}
 
-			this.recorder = new MediaRecorder(stream, {
-				mimeType
-			})
+			if (navigator.mediaDevices.getUserMedia === undefined) {
+				navigator.mediaDevices.getUserMedia = function (constraints) {
+					var getUserMedia =
+						navigator.webkitGetUserMedia || navigator.mozGetUserMedia
+					if (!getUserMedia) {
+						return Promise.reject(
+							new Error('getUserMedia is not implemented in this browser')
+						)
+					}
+
+					return new Promise(function (resolve, reject) {
+						getUserMedia.call(navigator, constraints, resolve, reject)
+					})
+				}
+			}
+
+			const stream = await navigator.mediaDevices
+				.getUserMedia({
+					audio: true,
+					video: false
+				})
+				.catch(this.onRecordingError)
+
+			const MIME_TYPE = {
+				webm: 'audio/webm;codecs=opus',
+				mp4: 'audio/mp4'
+			}
+
+			let mimeType
+
+			if (!MediaRecorder.isTypeSupported) mimeType = null
+			else if (MediaRecorder.isTypeSupported(MIME_TYPE.webm))
+				mimeType = MIME_TYPE.webm
+			else if (MediaRecorder.isTypeSupported(MIME_TYPE.mp4))
+				mimeType = MIME_TYPE.mp4
+
+			this.recorder = new MediaRecorder(
+				stream,
+				mimeType ? { mimeType } : undefined
+			)
 
 			this.recorder.ondataavailable = e => this.recordedChunks.push(e.data)
 			this.recorder.start()
 
 			const stopped = new Promise((resolve, reject) => {
 				this.recorder.onstop = resolve
-				this.recorder.onerror = event => reject(event.name)
+				this.recorder.onerror = event => {
+					console.log(event)
+					return reject(event.name)
+				}
 			})
 
-			stopped.then(async () => {
-				stream.getTracks().forEach(track => track.stop())
+			stopped
+				.then(async e => {
+					stream.getTracks().forEach(track => track.stop())
 
-				const blob = new Blob(this.recordedChunks, {
-					type: mimeType
+					const blob = new Blob(this.recordedChunks, { type: mimeType })
+
+					let duration
+
+					try {
+						duration = await this.getBlobDuration(blob)
+					} catch (e) {
+						duration = null
+					}
+
+					this.file.push({
+						blob: blob,
+						name: 'audio',
+						size: blob.size,
+						duration: duration,
+						type: blob.type,
+						audio: true,
+						localUrl: URL.createObjectURL(blob)
+					})
+
+					console.log(this.file)
+
+					if (this.file?.length) this.sendMessage()
 				})
-
-				const duration = await this.getBlobDuration(blob)
-
-				this.file.push({
-					blob: blob,
-					name: 'audio',
-					size: blob.size,
-					duration: duration,
-					type: blob.type,
-					audio: true,
-					localUrl: URL.createObjectURL(blob)
+				.catch(e => {
+					console.error(e)
 				})
-
-				if (this.file?.length) this.sendMessage()
-			})
 		},
 		getBlobDuration(blob) {
 			const tempVideoEl = document.createElement('video')
@@ -731,8 +790,11 @@ export default {
 			setTimeout(() => this.resizeTextarea(), 0)
 		},
 		resetTextareaSize() {
-			if (!this.refRoomTextarea) return
-			this.refRoomTextarea.style.height = '20px'
+			this.$nextTick(() => {
+				const el = this.refRoomTextarea ?? this.$refs['roomTextarea']
+				if (!el) return
+				el.style.height = '20px'
+			})
 		},
 		focusTextarea(disableMobileFocus) {
 			if (detectMobile() && disableMobileFocus) return
@@ -817,6 +879,8 @@ export default {
 			// if (this.isMediaCheck(this.file)) this.imageFile = message.file.url
 			this.message = message.content
 
+			this.$emit('startEditingMessage', this.editedMessage)
+
 			setTimeout(() => this.resizeTextarea(), 0)
 		},
 		scrollToBottom() {
@@ -828,17 +892,19 @@ export default {
 			this.$emit('typingMessage', this.message)
 		},
 		resizeTextarea() {
-			const el = this.refRoomTextarea
+			this.$nextTick(() => {
+				const el = this.refRoomTextarea ?? this.$refs['roomTextarea']
 
-			if (!el) return
+				if (!el) return
 
-			const padding = window
-				.getComputedStyle(el, null)
-				.getPropertyValue('padding-top')
-				.replace('px', '')
+				const padding = window
+					.getComputedStyle(el, null)
+					.getPropertyValue('padding-top')
+					.replace('px', '')
 
-			el.style.height = 0
-			el.style.height = el.scrollHeight - padding * 2 + 'px'
+				el.style.height = 0
+				el.style.height = el.scrollHeight - padding * 2 + 'px'
+			})
 		},
 		addEmoji(emoji) {
 			this.message += emoji.icon

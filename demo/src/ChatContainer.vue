@@ -432,17 +432,13 @@ export default {
 				newMessage.file = deleteDbField
 			}
 
-			await messagesRef(roomId)
-				.doc(messageId)
-				.update(newMessage)
+			await messagesRef(roomId).doc(messageId).update(newMessage)
 
 			if (file) this.uploadFile({ file, messageId, roomId })
 		},
 
 		async deleteMessage({ messageId, roomId }) {
-			await messagesRef(roomId)
-				.doc(messageId)
-				.update({ deleted: new Date() })
+			await messagesRef(roomId).doc(messageId).update({ deleted: new Date() })
 		},
 
 		async uploadFile({ file, messageId, roomId }) {

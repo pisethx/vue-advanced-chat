@@ -6,10 +6,10 @@
 					:is="checkType(message, 'url') ? 'a' : 'span'"
 					:key="i"
 					:class="{
-						'px-1': !!message.href,
+						'pr-1': !!message.href,
 						'vac-text-ellipsis': singleLine,
 						'vac-text-deleted': deleted,
-						'vac-text-route': isRoute,
+						'vac-text-url': checkType(message, 'url'),
 						'vac-text-bold': checkType(message, 'bold'),
 						'vac-text-italic': checkType(message, 'italic'),
 						'vac-text-strike': checkType(message, 'strike'),
@@ -20,11 +20,14 @@
 							!singleLine && checkType(message, 'multiline-code')
 					}"
 					:href="message.href"
-					target="_blank"
+					:target="message.onclick ? undefined : '_blank'"
+					:onclick="
+						!singleLine && message.onclick ? message.onclick : undefined
+					"
 				>
 					<slot v-if="deleted" name="deleted-icon" v-bind="{ deleted }">
 						<svg-icon name="deleted" class="vac-icon-deleted" /> </slot
-					>{{ message.value.trim() }}</component
+					>{{ message.value }}</component
 				>
 			</template>
 		</div>
@@ -48,14 +51,12 @@ export default {
 		singleLine: { type: Boolean, default: false },
 		isRoute: { type: Boolean, default: false },
 		textFormatting: { type: Boolean, required: true },
-		mentionRegex: RegExp,
-		mentionRouteClick: String
+		mentionRegex: RegExp
 	},
 
 	computed: {
 		linkifiedMessage() {
 			return formatString(this.content, this.formatLinks, {
-				mentionRouteClick: this.mentionRouteClick,
 				mentionRegex: this.mentionRegex
 			})
 		}

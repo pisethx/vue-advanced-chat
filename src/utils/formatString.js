@@ -68,6 +68,7 @@ const pseudo_markdown = {
 }
 
 function compileToJSON(str, opts = {}) {
+	str = str.trim()
 	let result = []
 	let min_index_of = -1
 	let min_index_of_key = null
@@ -109,21 +110,21 @@ function compileToJSON(str, opts = {}) {
 
 	if (min_index_from_mention && min_index_of_key !== -1) {
 		let str_left = str.substr(0, min_index_of)
-		let str_link = str.substr(min_index_of, mentions[0].full.length)
+		let str_mention = str.substr(min_index_of, mentions[0].full.length)
 		let str_right = str.substr(min_index_of + mentions[0].full.length)
 		result.push(str_left)
-		result.push(str_link)
-		result = result.concat(compileToJSON(str_right), opts)
+		result.push(str_mention)
+		result = result.concat(compileToJSON(str_right, opts))
 		return result
 	}
 
 	if (min_index_from_link && min_index_of_key !== -1) {
 		let str_left = str.substr(0, min_index_of)
-		let str_mention = str.substr(min_index_of, links[0].value.length)
+		let str_link = str.substr(min_index_of, links[0].value.length)
 		let str_right = str.substr(min_index_of + links[0].value.length)
 		result.push(str_left)
-		result.push(str_mention)
-		result = result.concat(compileToJSON(str_right))
+		result.push(str_link)
+		result = result.concat(compileToJSON(str_right, opts))
 		return result
 	}
 
@@ -145,31 +146,25 @@ function compileToJSON(str, opts = {}) {
 				'm'
 			)
 		)
+
 		if (!match) {
 			str_left = str_left + char
 			result.push(str_left)
 		} else {
-			if (str_left) {
-				result.push(str_left)
-			}
+			if (str_left) result.push(str_left)
+
 			const object = {
 				start: char,
-				content: compileToJSON(match[1]),
+				content: compileToJSON(match[1], opts),
 				end: match[2],
 				type: pseudo_markdown[char].type
 			}
 			result.push(object)
 			str_right = str_right.substr(match[0].length)
 		}
-		result = result.concat(compileToJSON(str_right))
+		result = result.concat(compileToJSON(str_right, opts))
 		return result
-	} else {
-		if (str) {
-			return [str]
-		} else {
-			return []
-		}
-	}
+	} else return str ? [str] : []
 }
 
 function compileToHTML(json) {
@@ -277,7 +272,9 @@ function mentionResult(array, opts = {}) {
 			const [id, name] = stripTextFromRegex(mention).split('|')
 
 			arr.types = opts.doLinkify ? ['url'].concat(arr.types) : arr.types
-			arr.href = opts.mentionRouteClick.replace('{id}', id)
+			arr.href = 'javascript:void(0);'
+			arr.onclick = `EventBus.emit(${id})`
+			// arr.href = opts.mentionRouteClick.replace('{id}', id)
 			arr.value = `@${name}`
 		}
 	})
@@ -291,11 +288,11 @@ function linkifyResult(array) {
 
 		if (links.length) {
 			const spaces = arr.value.replace(links[0].value, '')
-			result.push({ types: arr.types, value: spaces.trim() })
+			result.push({ types: arr.types, value: spaces })
 
 			arr.types = ['url'].concat(arr.types)
 			arr.href = links[0].href
-			arr.value = links[0].value.trim()
+			arr.value = links[0].value
 		}
 
 		result.push(arr)

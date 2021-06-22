@@ -1,5 +1,5 @@
 <template>
-	<div @click.stop="message.isRoute ? $emit('routeClick', message) : undefined">
+	<div>
 		<div v-if="showDate" class="vac-card-info vac-card-date">
 			{{ message.date }}
 		</div>
@@ -21,9 +21,10 @@
 			<div
 				class="vac-message-container"
 				:class="{
-					'vac-message-container-route': message.isRoute,
 					'vac-message-container-offset': messageOffset
 				}"
+				@mouseenter="onHoverMessage(message)"
+				@mouseleave="onLeaveMessage"
 			>
 				<div
 					ref="imageRef"
@@ -33,8 +34,6 @@
 						'vac-message-current': message.sender_id === currentUserId,
 						'vac-message-deleted': message.deleted
 					}"
-					@mouseover="onHoverMessage(message)"
-					@mouseleave="onLeaveMessage"
 				>
 					<slot name="chat-username" v-bind="{ message, room }">
 						<div
@@ -77,18 +76,22 @@
 						<span>{{ textMessages.MESSAGE_DELETED }}</span>
 					</div>
 
+					<!-- <slot v-else-if="message.isRoute" name="message" v-bind="{ message }">
+					</slot> -->
+
 					<div v-else-if="!message.file.length">
 						<format-message
 							:isRoute="message.isRoute"
 							:content="message.content"
 							:textFormatting="textFormatting"
-							:mentionRouteClick="mentionRouteClick"
 							:mentionRegex="mentionRegex"
 						>
 							<template v-slot:deleted-icon="data">
 								<slot name="deleted-icon" v-bind="data"></slot>
 							</template>
 						</format-message>
+
+						<slot name="message-content" v-bind="{ message }"></slot>
 					</div>
 
 					<div
@@ -147,9 +150,11 @@
 								class="vac-audio-message"
 							>
 								<div id="vac-player">
-									<audio controls v-if="file.audio">
-										<source :src="file.url" />
-									</audio>
+									<slot name="audio-player" v-bind="{ file }">
+										<audio controls>
+											<source :src="file.url" />
+										</audio>
+									</slot>
 								</div>
 							</div>
 
@@ -167,11 +172,18 @@
 						</template>
 					</div>
 
-					<div v-if="message.file.length && message.content">
+					<div
+						v-if="!message.deleted && message.file.length && message.content"
+					>
 						{{ message.content }}
 					</div>
 
-					<div class="vac-text-timestamp">
+					<div
+						class="vac-text-timestamp"
+						:style="{
+							textAlign: message.sender_id === currentUserId ? 'right' : 'left'
+						}"
+					>
 						<div
 							class="vac-icon-edited"
 							v-if="message.edited && !message.deleted"
@@ -279,6 +291,20 @@
 					</transition>
 				</div>
 
+				<div v-if="!message.deleted">
+					<slot
+						name="reaction"
+						v-bind="{
+							message,
+							hover: isMessageActions,
+							onHoverMessage,
+							onLeaveMessage
+						}"
+					></slot>
+					<slot name="reactions" v-bind="{ message, hover: isMessageActions }">
+					</slot>
+				</div>
+
 				<transition-group name="vac-slide-left" v-if="!message.deleted">
 					<button
 						v-for="(reaction, key) in message.reactions"
@@ -335,8 +361,7 @@ export default {
 		emojisList: { type: Object, required: true },
 		hideOptions: { type: Boolean, required: true },
 
-		mentionRegex: RegExp,
-		mentionRouteClick: String
+		mentionRegex: RegExp
 	},
 
 	data() {
@@ -539,8 +564,8 @@ export default {
 				)
 					return
 
-				const menuOptionsTop = this.$refs.menuOptions.getBoundingClientRect()
-					.height
+				const menuOptionsTop =
+					this.$refs.menuOptions.getBoundingClientRect().height
 
 				const actionIconTop = this.$refs.actionIcon.getBoundingClientRect().top
 				const roomFooterTop = this.roomFooterRef.getBoundingClientRect().top
@@ -768,7 +793,6 @@ export default {
 .vac-text-timestamp {
 	font-size: 10px;
 	color: var(--chat-message-color-timestamp);
-	text-align: right;
 }
 
 .selector:not(*:root),
@@ -987,6 +1011,17 @@ export default {
 	}
 }
 
+@media only screen and (max-width: 1200px) {
+	.vac-message-box {
+		flex: 0 0 70%;
+		max-width: 70%;
+	}
+
+	.vac-offset-current {
+		margin-left: 30%;
+	}
+}
+
 @media only screen and (max-width: 768px) {
 	.vac-message-image {
 		width: 100px;
@@ -1001,12 +1036,12 @@ export default {
 	}
 
 	.vac-message-box {
-		flex: 0 0 80%;
-		max-width: 80%;
+		flex: 0 0 90%;
+		max-width: 90%;
 	}
 
 	.vac-offset-current {
-		margin-left: 20%;
+		margin-left: 10%;
 	}
 
 	.vac-options-container {

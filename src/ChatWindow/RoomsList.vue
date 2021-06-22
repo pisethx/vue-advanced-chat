@@ -118,7 +118,6 @@
 								:deleted="!!room.lastMessage.deleted && !typingUsers(room)"
 								:formatLinks="false"
 								:textFormatting="textFormatting"
-								:mentionRouteClick="mentionRouteClick"
 								:mentionRegex="mentionRegex"
 								:singleLine="true"
 							>
@@ -167,8 +166,7 @@ export default {
 		rooms: { type: Array, required: true },
 		loadingRooms: { type: Boolean, required: true },
 		room: { type: Object, required: true },
-		mentionRegex: RegExp,
-		mentionRouteClick: String
+		mentionRegex: RegExp
 	},
 
 	data() {

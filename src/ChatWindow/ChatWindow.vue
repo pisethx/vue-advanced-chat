@@ -13,7 +13,6 @@
 				:textFormatting="textFormatting"
 				:isMobile="isMobile"
 				:mentionRegex="mentionRegex"
-				:mentionRouteClick="mentionRouteClick"
 				@fetchRoom="fetchRoom"
 				@addRoom="addRoom"
 			>
@@ -47,12 +46,13 @@
 				:roomInfo="$listeners.roomInfo"
 				:textareaAction="$listeners.textareaActionHandler"
 				:mentionRegex="mentionRegex"
-				:mentionRouteClick="mentionRouteClick"
+				:hasCursor="hasCursor"
 				@toggleRoomsList="toggleRoomsList"
 				@roomInfo="roomInfo"
 				@fetchMessages="fetchMessages"
 				@sendMessage="sendMessage"
 				@editMessage="editMessage"
+				@startEditingMessage="startEditingMessage"
 				@deleteMessage="deleteMessage"
 				@openFile="openFile"
 				@routeClick="$emit('routeClick', $event)"
@@ -118,8 +118,8 @@ export default {
 		textFormatting: { type: Boolean, default: true },
 		newMessage: { type: Object, default: null },
 		roomMessage: { type: String, default: '' },
-		mentionRegex: RegExp,
-		mentionRouteClick: String
+		hasCursor: { type: Boolean, default: false },
+		mentionRegex: RegExp
 	},
 
 	data() {
@@ -258,6 +258,9 @@ export default {
 		},
 		editMessage(message) {
 			this.$emit('editMessage', { ...message, roomId: this.room.roomId })
+		},
+		startEditingMessage(message) {
+			this.$emit('startEditingMessage', message)
 		},
 		deleteMessage(message) {
 			this.$emit('deleteMessage', {

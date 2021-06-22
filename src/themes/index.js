@@ -127,8 +127,8 @@ export const defaultThemeStyles = {
 	dark: {
 		general: {
 			color: '#fff',
-			backgroundInput: '#202223',
-			colorPlaceholder: '#596269',
+			backgroundInput: '#242526',
+			colorPlaceholder: '#3A3B3C',
 			colorCaret: '#1976d2',
 			colorSpinner: '#fff',
 			borderStyle: 'none',
@@ -143,7 +143,7 @@ export const defaultThemeStyles = {
 		},
 
 		header: {
-			background: '#181a1b',
+			background: '#242526',
 			colorRoomName: '#fff',
 			colorRoomInfo: '#9ca6af'
 		},
@@ -160,11 +160,11 @@ export const defaultThemeStyles = {
 		},
 
 		sidemenu: {
-			background: '#181a1b',
+			background: '#242526',
 			backgroundHover: '#202224',
 			backgroundActive: '#151617',
 			colorActive: '#fff',
-			borderColorSearch: '#181a1b'
+			borderColorSearch: '#242526'
 		},
 
 		dropdown: {
@@ -173,7 +173,7 @@ export const defaultThemeStyles = {
 		},
 
 		message: {
-			background: '#22242a',
+			background: '#242526',
 			backgroundMe: '#4fb381',
 			color: '#fff',
 			colorStarted: '#9ca6af',
@@ -192,7 +192,7 @@ export const defaultThemeStyles = {
 			colorNewMessages: '#fff',
 			backgroundReaction: 'none',
 			borderStyleReaction: 'none',
-			backgroundReactionHover: '#202223',
+			backgroundReactionHover: '#242526',
 			borderStyleReactionHover: 'none',
 			colorReactionCounter: '#fff',
 			backgroundReactionMe: '#4e9ad1',
@@ -215,7 +215,7 @@ export const defaultThemeStyles = {
 			colorTimestamp: '#ebedf2',
 			colorStateOnline: '#4caf50',
 			colorStateNew: '#1976d2',
-			colorStateOffline: '#596269',
+			colorStateOffline: '#3A3B3C',
 			backgroundCounterBadge: '#1976d2',
 			colorCounterBadge: '#fff'
 		},
@@ -225,7 +225,7 @@ export const defaultThemeStyles = {
 		},
 
 		icons: {
-			search: '#596269',
+			search: '#3A3B3C',
 			add: '#fff',
 			toggle: '#fff',
 			menu: '#fff',
