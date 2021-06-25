@@ -57,7 +57,11 @@
 							</div>
 						</slot>
 					</div>
-					<slot v-if="room.roomId" name="room-options">
+					<div v-if="room.roomId" class="d-flex align-center">
+						<slot
+							name="voice-playback-rate"
+							v-bind="{ isVoicePlaying: !!autoplayVoiceMessageId }"
+						></slot>
 						<div
 							class="vac-svg-button vac-room-options"
 							v-if="menuActions.length"
@@ -85,7 +89,7 @@
 								</div>
 							</div>
 						</transition>
-					</slot>
+					</div>
 				</div>
 			</slot>
 		</div>
@@ -131,6 +135,8 @@
 								:currentUserId="currentUserId"
 								:message="message"
 								:index="i"
+								:shouldAutoplay="autoplayVoiceMessageId === message._id"
+								:voicePlaybackRate="voicePlaybackRate"
 								:messages="messages"
 								:editedMessage="editedMessage"
 								:messageActions="messageActions"
@@ -151,6 +157,8 @@
 								@addNewMessage="addNewMessage"
 								@sendMessageReaction="sendMessageReaction"
 								@hideOptions="hideOptions = $event"
+								@voiceEnded="onVoiceEnded(message)"
+								@voiceStarted="onVoiceStarted(message)"
 							>
 								<template
 									v-for="(index, name) in $scopedSlots"
@@ -192,7 +200,17 @@
 						</template>
 						<div class="vac-reply-info">
 							<div class="vac-reply-username">{{ messageReply.username }}</div>
-							<div class="vac-reply-content">{{ messageReply.content }}</div>
+							<div class="vac-reply-content" v-if="messageReply.content">
+								<!-- {{ messageReply.content }} -->
+
+								<format-message
+									:isRoute="messageReply.isRoute"
+									:content="messageReply.content"
+									:textFormatting="textFormatting"
+									:mentionRegex="mentionRegex"
+								>
+								</format-message>
+							</div>
 						</div>
 					</div>
 
@@ -337,7 +355,11 @@
 							</template>
 						</emoji-picker>
 
-						<div v-if="showAudio" class="vac-svg-button" @click="recordAudio">
+						<div
+							v-if="canRecordAudio"
+							class="vac-svg-button"
+							@click="recordAudio"
+						>
 							<slot
 								v-if="recorder.state === 'recording'"
 								name="microphone-off-icon"
@@ -393,7 +415,7 @@
 
 <script>
 import AudioRecorder from 'audio-recorder-polyfill'
-
+import FormatMessage from './FormatMessage'
 import InfiniteLoading from 'vue-infinite-loading'
 import vClickOutside from 'v-click-outside'
 import emojis from 'vue-emoji-picker/src/emojis'
@@ -410,6 +432,7 @@ import typingText from '../utils/typingText'
 export default {
 	name: 'room',
 	components: {
+		FormatMessage,
 		InfiniteLoading,
 		Loader,
 		Message,
@@ -441,6 +464,8 @@ export default {
 		showEmojis: { type: Boolean, required: true },
 		showReactionEmojis: { type: Boolean, required: true },
 		showNewMessagesDivider: { type: Boolean, required: true },
+		autoplayVoiceChat: { type: Boolean, required: true },
+		voicePlaybackRate: Number,
 		hasCursor: { type: Boolean, required: true },
 		textFormatting: { type: Boolean, required: true },
 		loadingRooms: { type: Boolean, required: true },
@@ -451,6 +476,7 @@ export default {
 
 	data() {
 		return {
+			canRecordAudio: true,
 			message: '',
 			editedMessage: {},
 			messageReply: null,
@@ -468,7 +494,9 @@ export default {
 			newMessages: [],
 			recorderStream: {},
 			recorder: {},
-			recordedChunks: []
+			recordedChunks: [],
+
+			autoplayVoiceMessageId: null
 		}
 	},
 
@@ -604,6 +632,18 @@ export default {
 	},
 
 	methods: {
+		onVoiceStarted(voiceMessage) {
+			if (!this.autoplayVoiceChat) return
+
+			this.autoplayVoiceMessageId = voiceMessage._id
+		},
+		onVoiceEnded(voiceMessage) {
+			if (!this.autoplayVoiceChat) return
+
+			this.autoplayVoiceMessageId = this.messages.find(
+				message => message._id > voiceMessage._id && message.file?.[0]?.audio
+			)?._id
+		},
 		onImgLoad(idx) {
 			let ref = this.$refs.imageFile[idx]
 			let height = ref.height
@@ -628,7 +668,7 @@ export default {
 				e || new Error('Audio Recording is not supported on your device.')
 			)
 		},
-		async startRecording() {
+		async initRecorder() {
 			window.MediaRecorder = MediaRecorder.isTypeSupported
 				? window.MediaRecorder
 				: AudioRecorder
@@ -658,7 +698,16 @@ export default {
 					audio: true,
 					video: false
 				})
-				.catch(this.onRecordingError)
+				.catch(e => {
+					this.onRecordingError(e)
+					return null
+				})
+
+			return stream
+		},
+		async startRecording() {
+			const stream = await this.initRecorder()
+			this.canRecordAudio = !!stream
 
 			const MIME_TYPE = {
 				webm: 'audio/webm;codecs=opus',
@@ -684,7 +733,6 @@ export default {
 			const stopped = new Promise((resolve, reject) => {
 				this.recorder.onstop = resolve
 				this.recorder.onerror = event => {
-					console.log(event)
 					return reject(event.name)
 				}
 			})
@@ -695,31 +743,27 @@ export default {
 
 					const blob = new Blob(this.recordedChunks, { type: mimeType })
 
-					let duration
+					// let duration
 
-					try {
-						duration = await this.getBlobDuration(blob)
-					} catch (e) {
-						duration = null
-					}
+					// try {
+					// 	duration = await this.getBlobDuration(blob)
+					// } catch (e) {
+					// 	duration = null
+					// }
 
 					this.file.push({
 						blob: blob,
 						name: 'audio',
 						size: blob.size,
-						duration: duration,
+						// duration: duration,
 						type: blob.type,
 						audio: true,
 						localUrl: URL.createObjectURL(blob)
 					})
 
-					console.log(this.file)
-
 					if (this.file?.length) this.sendMessage()
 				})
-				.catch(e => {
-					console.error(e)
-				})
+				.catch(e => {})
 		},
 		getBlobDuration(blob) {
 			const tempVideoEl = document.createElement('video')

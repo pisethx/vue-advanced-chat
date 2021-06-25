@@ -47,6 +47,8 @@
 				:textareaAction="$listeners.textareaActionHandler"
 				:mentionRegex="mentionRegex"
 				:hasCursor="hasCursor"
+				:autoplayVoiceChat="autoplayVoiceChat"
+				:voicePlaybackRate="voicePlaybackRate"
 				@toggleRoomsList="toggleRoomsList"
 				@roomInfo="roomInfo"
 				@fetchMessages="fetchMessages"
@@ -116,6 +118,8 @@ export default {
 		showReactionEmojis: { type: Boolean, default: true },
 		showNewMessagesDivider: { type: Boolean, default: true },
 		textFormatting: { type: Boolean, default: true },
+		autoplayVoiceChat: { type: Boolean, default: true },
+		voicePlaybackRate: Number,
 		newMessage: { type: Object, default: null },
 		roomMessage: { type: String, default: '' },
 		hasCursor: { type: Boolean, default: false },

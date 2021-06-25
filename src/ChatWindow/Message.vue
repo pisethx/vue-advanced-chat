@@ -8,7 +8,10 @@
 			{{ textMessages.NEW_MESSAGES }}
 		</div>
 
-		<div v-if="message.system" class="vac-card-info vac-card-system">
+		<div
+			v-if="message.system && message.content"
+			class="vac-card-info vac-card-system"
+		>
 			{{ message.content }}
 		</div>
 
@@ -65,7 +68,14 @@
 						</div>
 
 						<div class="vac-reply-content">
-							{{ message.replyMessage.content }}
+							<format-message
+								v-if="message.replyMessage && message.replyMessage.content"
+								:isRoute="message.isRoute"
+								:content="message.replyMessage.content"
+								:textFormatting="textFormatting"
+								:mentionRegex="mentionRegex"
+							>
+							</format-message>
 						</div>
 					</div>
 
@@ -92,6 +102,17 @@
 						</format-message>
 
 						<slot name="message-content" v-bind="{ message }"></slot>
+					</div>
+
+					<div
+						v-else-if="
+							message.file.length === 1 && checkMediaType(message.file[0])
+						"
+					>
+						<slot
+							name="single-image"
+							v-bind="{ message, openFile: () => openFile('preview', 0) }"
+						></slot>
 					</div>
 
 					<div
@@ -144,7 +165,23 @@
 								</div>
 							</div>
 
-							<div
+							<audio-player
+								v-else-if="file.audio"
+								:src="file.url"
+								:shouldAutoplay="shouldAutoplay"
+								:voicePlaybackRate="voicePlaybackRate"
+								:key="'audio-' + idx"
+								@started="$emit('voiceStarted')"
+								@ended="$emit('voiceEnded')"
+								@update-progress-time="progressTime = $event"
+								@hover-audio-progress="hoverAudioProgress = $event"
+							>
+								<template v-for="(i, name) in $scopedSlots" #[name]="data">
+									<slot :name="name" v-bind="data" />
+								</template>
+							</audio-player>
+
+							<!-- <div
 								:key="'audio-' + idx"
 								v-else-if="file.audio"
 								class="vac-audio-message"
@@ -156,7 +193,7 @@
 										</audio>
 									</slot>
 								</div>
-							</div>
+							</div> -->
 
 							<div :key="'file-' + idx" v-else class="vac-file-message">
 								<div
@@ -334,10 +371,11 @@ import SvgIcon from './SvgIcon'
 // import Loader from './Loader'
 import EmojiPicker from './EmojiPicker'
 import FormatMessage from './FormatMessage'
+import AudioPlayer from './AudioPlayer'
 
 export default {
 	name: 'message',
-	components: { SvgIcon, EmojiPicker, FormatMessage },
+	components: { SvgIcon, EmojiPicker, FormatMessage, AudioPlayer },
 
 	directives: {
 		clickOutside: vClickOutside.directive
@@ -361,6 +399,8 @@ export default {
 		emojisList: { type: Object, required: true },
 		hideOptions: { type: Boolean, required: true },
 
+		shouldAutoplay: { type: Boolean, required: true },
+		voicePlaybackRate: Number,
 		mentionRegex: RegExp
 	},
 
@@ -376,7 +416,10 @@ export default {
 			messageReaction: '',
 			newMessage: {},
 			emojiOpened: false,
-			imageResponsive: ''
+			imageResponsive: '',
+
+			progressTime: '- : -',
+			hoverAudioProgress: false
 		}
 	},
 
@@ -938,7 +981,7 @@ export default {
 	border-radius: 50%; */
 	background: none;
 	position: absolute;
-	top: 7px;
+	top: 5px;
 	right: 7px;
 
 	svg {
@@ -1050,6 +1093,11 @@ export default {
 
 	.vac-menu-left {
 		right: -50px;
+	}
+
+	.vac-message-options {
+		top: 2px;
+		right: 2px;
 	}
 }
 </style>

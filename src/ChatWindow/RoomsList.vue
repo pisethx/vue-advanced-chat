@@ -138,9 +138,9 @@
 					</div>
 				</slot>
 			</div>
-		</div>
 
-		<slot name="rooms-footer"></slot>
+			<slot name="rooms-footer"></slot>
+		</div>
 	</div>
 </template>
 

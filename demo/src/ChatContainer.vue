@@ -231,7 +231,6 @@ export default {
 
 			this.listenUsersOnlineStatus()
 			this.listenRoomsTypingUsers(query)
-			// setTimeout(() => console.log('TOTAL', this.dbRequestCount), 2000)
 		},
 
 		listenLastMessage(room, index) {
@@ -671,12 +670,6 @@ export default {
 			this.removeRoomId = null
 			this.removeUserId = ''
 		}
-
-		// ,incrementDbCounter(type, size) {
-		// 	size = size || 1
-		// 	this.dbRequestCount += size
-		// 	console.log(type, size)
-		// }
 	}
 }
 </script>

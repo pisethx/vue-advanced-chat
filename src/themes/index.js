@@ -74,7 +74,11 @@ export const defaultThemeStyles = {
 			borderStyleReactionMe: '1px solid #3b98b8',
 			backgroundReactionHoverMe: '#cfecf5',
 			borderStyleReactionHoverMe: '1px solid #3b98b8',
-			colorReactionCounterMe: '#0b59b3'
+			colorReactionCounterMe: '#0b59b3',
+			backgroundAudioRecord: '#eb4034',
+			backgroundAudioLine: 'rgba(0, 0, 0, 0.15)',
+			backgroundAudioProgress: '#3A3B3C',
+			backgroundAudioProgressSelector: '#3A3B3C'
 		},
 
 		markdown: {
@@ -121,7 +125,11 @@ export const defaultThemeStyles = {
 			dropdownMessageBackground: 'rgba(0, 0, 0, 0.25)',
 			dropdownScroll: '#0a0a0a',
 			microphone: '#1976d2',
-			microphoneOff: '#eb4034'
+			microphoneOff: '#eb4034',
+			audioPlay: '#3A3B3C',
+			audioPause: '#3A3B3C',
+			audioCancel: '#eb4034',
+			audioConfirm: '#1ba65b'
 		}
 	},
 	dark: {
@@ -199,7 +207,11 @@ export const defaultThemeStyles = {
 			borderStyleReactionMe: 'none',
 			backgroundReactionHoverMe: '#4e9ad1',
 			borderStyleReactionHoverMe: 'none',
-			colorReactionCounterMe: '#fff'
+			colorReactionCounterMe: '#fff',
+			backgroundAudioRecord: '#eb4034',
+			backgroundAudioLine: 'rgba(255, 255, 255, 0.15)',
+			backgroundAudioProgress: '#f0f2f5',
+			backgroundAudioProgressSelector: '#f0f2f5'
 		},
 
 		markdown: {
@@ -247,7 +259,11 @@ export const defaultThemeStyles = {
 			dropdownMessageBackground: 'rgba(0, 0, 0, 0.25)',
 			dropdownScroll: '#0a0a0a',
 			microphone: '#fff',
-			microphoneOff: '#eb4034'
+			microphoneOff: '#eb4034',
+			audioPlay: '#f0f2f5',
+			audioPause: '#f0f2f5',
+			audioCancel: '#eb4034',
+			audioConfirm: '#1ba65b'
 		}
 	}
 }
@@ -337,6 +353,11 @@ export const cssThemeVars = ({
 		'--chat-message-border-style-reaction-hover-me':
 			message.borderStyleReactionHoverMe,
 		'--chat-message-color-reaction-counter-me': message.colorReactionCounterMe,
+		'--chat-message-bg-color-audio-record': message.backgroundAudioRecord,
+		'--chat-message-bg-color-audio-line': message.backgroundAudioLine,
+		'--chat-message-bg-color-audio-progress': message.backgroundAudioProgress,
+		'--chat-message-bg-color-audio-progress-selector':
+			message.backgroundAudioProgressSelector,
 
 		// markdown
 		'--chat-markdown-bg': markdown.background,
@@ -380,6 +401,10 @@ export const cssThemeVars = ({
 		'--chat-icon-bg-dropdown-message': icons.dropdownMessageBackground,
 		'--chat-icon-color-dropdown-scroll': icons.dropdownScroll,
 		'--chat-icon-color-microphone': icons.microphone,
-		'--chat-icon-color-microphone-off': icons.microphoneOff
+		'--chat-icon-color-microphone-off': icons.microphoneOff,
+		'--chat-icon-color-audio-play': icons.audioPlay,
+		'--chat-icon-color-audio-pause': icons.audioPause,
+		'--chat-icon-color-audio-cancel': icons.audioCancel,
+		'--chat-icon-color-audio-confirm': icons.audioConfirm
 	}
 }
